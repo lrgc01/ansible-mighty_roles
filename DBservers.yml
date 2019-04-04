@@ -1,0 +1,12 @@
+---
+- hosts: db_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "azureuser"
+  roles:
+   - common
+   - base
+   - users
+   - DB_adm
+   - restore
+   - finals

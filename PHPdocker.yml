@@ -1,0 +1,13 @@
+---
+- hosts: php_docker
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "azureuser"
+  roles:
+   - common
+   - base
+   - phpcfg
+   - users
+   - gitcfg
+   - SSLcrt
+   - finals

@@ -1,0 +1,38 @@
+---
+- name: Reboot RDS instance by name -------
+  rds:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    command: reboot
+    region: "{{ region }}"
+    instance_name: "{{ dbInstanceName }}"
+  when: dbInstanceName is defined and false
+  tags: reboot_rds_instance, reboot_instance
+
+- name: Start/stop EC2 instances by tag ---
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: "{{ item.state }}"
+    region: "{{ region }}"
+    instance_tags: "{{ item.tags }}"
+    wait: "yes"
+  loop: "{{ ec2Instances }}"
+  register: instances_state
+  when: (ec2Instances[0] and allEc2InstancesState is not defined) and
+        (item.state == "running" or item.state == "stopped" or item.state == "rebooted")
+  tags: change_state_ec2_instance, change_state_instance
+
+- name: Start/stop all EC2 instances ------
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: "{{ allEc2InstancesState }}"
+    region: "{{ region }}"
+    instance_ids: "{{ item.instance_id }}"
+    wait: "yes"
+  loop: "{{ ec2_facts.instances }}"
+  when: allEc2InstancesState is defined
+  register: instances_state
+  tags: change_state_all_ec2_instances, change_state_all_instances
+

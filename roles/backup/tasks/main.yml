@@ -1,0 +1,22 @@
+---
+- name: Backup databases, directories, etc, via shell cmd -
+  shell: "{{ item.shellcmd }}"
+  args:
+    creates: "{{ item.creates }}"
+    chdir: "{{ item.chdir }}"
+    warn: false
+  loop: "{{ shell_bkpcmd_list }}"
+  when: item.enabled
+  register: shell_backup_done
+  tags: db_backup
+
+- name: Download backup files -----------------------------
+  fetch:
+    src: "{{ item.remote }}"
+    dest: "{{ item.local }}"
+    flat: true
+  loop: "{{ bkp_rest_files_list }}"
+  when: bkp_rest_files_list[0] and "download" in item.action
+  register: bkp_files_downloaded
+  tags: backup_files
+

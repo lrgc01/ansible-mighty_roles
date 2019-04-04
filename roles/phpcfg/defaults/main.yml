@@ -1,0 +1,11 @@
+---
+# Phpcfg example yml var file
+#
+# PHP composer
+#
+# Will install composer packages inside root dir  when become=true
+dolibarr_base : "dolibarr-base"
+composer_list           :
+   - { command : false        , global : true  , arguments : "drush/drush:7" }
+#   - { command : "create-project" , global : false , arguments : "dolibarr/dolibarr {{ dolibarr_base }}" , working_dir : "{{ www_basedir }}" , creates : "{{ www_basedir }}/{{ dolibarr_base }}" }
+composer_path           : "PATH=/bin:/sbin:/usr/bin:/usr/sbin:/root/.config/composer/vendor/bin"

@@ -1,0 +1,4 @@
+---
+gather_y_n	: false
+purge_y_n	: false
+autoremove_y_n  : false

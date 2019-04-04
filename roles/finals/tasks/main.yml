@@ -1,0 +1,57 @@
+---
+#
+# Later settings might be necessary after installing base systems
+#
+- name: Deploy later specific templates -------------------
+  template:
+    src: "{{ item.name }}.j2"
+    dest: "{{ item.dest }}/{{ item.name }}"
+  loop: "{{ later_dir_file_tmpl_list }}"
+  when: item.enabled and "tmpl" in item.types
+  register: later_templates_in_place
+  tags: final_config
+ 
+- name: Create later directories and set permissions ------
+  file: 
+    path: "{{ item.path }}"
+    group: "{{ item.group | default(omit) }}"
+    owner: "{{ item.owner | default(omit) }}"
+    mode: "{{ item.mode | default(omit) }}"
+    state: "directory"
+    recurse: "{{ item.recurse | default(omit) }}"
+  loop: "{{ later_dirs_config_list }}"
+  when: item.enabled
+  register: later_dirs_done
+  tags: final_config
+
+- name: Add or change line in config files ----------------
+  lineinfile:
+    path: "{{ item.path }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ later_lineinfile_config_list }}"
+  when: item.enabled
+  register: later_lineinfile_done
+  tags: final_config
+
+# Can optionally stop or disable
+#- name: Ensure services are started and enabled -----------
+#  service: 
+#    name: "{{ item.srv }}" 
+#    state: "{{ item.state }}" 
+#    enabled: "{{ item.enabled }}"
+#  loop: "{{ dep_pkg_list }}"
+#  when: item.srv is defined and dep_pkg_installed is changed
+#  tags: final_config
+
+- name: Restart service after later tmpl/file/link change -
+  service:
+    name: "{{ item.item.srv }}"
+    state: "restarted"    
+    enabled: true
+  loop: "{{ later_templates_in_place.results }} + {{ later_lineinfile_done.results }}"
+  when: (templates_in_place is changed or later_lineinfile_done is changed) and item is changed and item.item.srv is defined
+  tags: final_config

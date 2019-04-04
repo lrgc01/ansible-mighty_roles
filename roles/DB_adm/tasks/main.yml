@@ -1,0 +1,28 @@
+---
+- name: Create DBs on respective hosts --------------------
+  mysql_db: 
+    login_user: "{{ item.admuser }}"
+    login_password: "{{ item.admpass }}"
+    login_host: "{{ item.host }}"
+    name: "{{ item.dbname }}"
+    state: present
+  loop: "{{ db_list }}"
+  when: item.dbcreate
+  register: databases_created 
+  tags: databases, create_databases
+
+- name: Grant user privileges in DBs ----------------------
+  mysql_user:
+    login_user: "{{ item.admuser }}"
+    login_password: "{{ item.admpass }}"
+    login_host: "{{ item.host }}"
+    name: "{{ item.user }}"
+    password: "{{ item.pass }}"
+    host: '%'
+    priv: "{{ item.perms }}"
+    state: present
+    check_implicit_admin: true
+    append_privs: "{{ item.append_privs }}"
+  loop: "{{ db_list }}"
+  when: item.dbcreate and databases_created is success
+  tags: databases, grant_privileges

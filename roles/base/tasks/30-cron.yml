@@ -1,0 +1,19 @@
+---
+# Cron to update FQDN of the computer instance
+- name: Configure cron ------------------------------------
+  cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute | default('*') }}"
+    hour: "{{ item.hour | default('*') }}"
+    day: "{{ item.day | default('*') }}"
+    month: "{{ item.month | default('*') }}"
+    weekday: "{{ item.weekday | default('*') }}"
+    job: "{{ item.job }}"
+    user: "{{ item.user }}"
+    state: "{{ item.state }}"
+  loop: "{{ cron_list }}"
+  when: cron_list[0]
+  register: cron_updated
+  tags: cron_config
+
+

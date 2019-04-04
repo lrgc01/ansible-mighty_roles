@@ -1,0 +1,54 @@
+---
+#- name: Apt repositories for certbot ----------------------
+#  apt_repository:
+#    repo: ppa:certbot/certbot
+#  register: certbot_repo_added
+#  tags: update_repository
+#
+- name: Install remote python if not installed ------------
+  raw: "if [ ! -f /usr/bin/python ] ; then apt install -y python ; exit 0 ; fi"
+  tags: bootstrap_python
+
+- name: Install requisite packages to run apt_key ---------
+  apt:
+    pkg: "{{ item }}"
+    state: "present"
+  loop: "{{ apt_key_req_packs }}"
+  when: listAptRepos[0] 
+  register: req_to_apt_key_installed
+  tags: update_repository, apt_keys
+
+- name: Apt keys - add a repository key -------------------
+  apt_key:
+    url: "{{ item.keyUrl }}"
+    state: "{{ item.state }}"
+  loop: "{{ listAptRepos }}"
+  when: listAptRepos[0] and item.state and item.keyUrl and req_to_apt_key_installed is success
+  register: apt_keys_done
+  tags: update_repository, apt_keys
+
+- name: Apt database - add new repo to repository listing -
+  apt_repository:
+    repo: "{{ item.repoStr }}"
+    state: "{{ item.state }}"
+  loop: "{{ listAptRepos }}"
+  when: listAptRepos[0] and item.state and item.repoStr
+  register: apt_repos_done
+  tags: update_repository
+
+- name: Update cache and upgrade (may take a time) --------
+  apt: 
+    update_cache: "yes"
+    upgrade: "{{ update_cache_y_n }}"
+  when: update_cache_y_n == "yes" or apt_repos_done is changed
+  register: updated_cache
+  tags: update_repository
+
+- name: Install vary basic packages to run ansible --------
+  apt:
+    pkg: "{{ item.pkg }}"
+    state: "present"
+  loop: "{{ base_dep_pkg_list }}"
+  when: base_dep_pkg_list[0]
+  register: base_dep_pkg_installed
+  tags: install_base_pkg

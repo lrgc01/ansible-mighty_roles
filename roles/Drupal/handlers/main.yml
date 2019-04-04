@@ -1,0 +1,18 @@
+---
+# After templates and/or if a local new certificate was created 
+# (or changed), restart the web server (nginx).
+- name: Restart web server 
+  service:
+    name: "{{ web_service }}"
+    state: "restarted"
+    enabled: true
+  when: web_service is defined
+
+# Not used
+- name: Restart dependencies services
+  service: 
+    name: "{{ item.srv }}" 
+    state: "restarted" 
+    enabled: true
+  when: item.srv is defined
+  loop: "{{ dep_pkg_list }}"

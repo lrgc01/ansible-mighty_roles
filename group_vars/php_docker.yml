@@ -1,0 +1,256 @@
+---
+###########################################
+# 
+# Common role block
+#
+# Preliminary common configs
+#
+listAptRepos :
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/debian/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable",
+    }
+
+#--- End of common role block
+
+###########################################
+#
+# Python role block variable definition
+#
+# boto* is for AWS so use in localhost only
+pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+#pip_install_list        : [ false ]
+
+#--- End of python role block
+
+###########################################
+#
+# General var definition block - to all roles
+#
+# Our web server definitions
+#
+www_basedir             : "/var/www"
+www_htmldir             : "{{ www_basedir }}/html"
+www_username            : "www-data"
+web_service             : "nginx"
+
+#
+domain1_rootdir         : "{{ www_htmldir }}/Orm_site"
+git_data_dir		: "/var/git"
+git_separate_dir	: "{{ git_data_dir }}/Orm_site.git"
+sys_username		: "azureuser"
+github_source_repo	: "https://github.com/lrgc01/Orm_test.git"
+git_branch		: "stable"
+#
+
+#
+# Will be used mainly with SSL certificate role
+#
+key_base_path           : "/etc/ssl/private"
+cert_base_path          : "/etc/ssl/certs"
+domain1                 : "{{ inventory_hostname }}"
+cert_name_prefix        : "selfsigned"
+account_key             : "account-key.key"
+#cert_name_prefix        : "stg-letsencrypt"
+#account_key             : "stg-letsencrypt-account-key.key"
+##cert_name_prefix        : "pro-{{ domain1 }}"
+##account_key             : "pro-letsencrypt-account-key.key"
+#
+#
+
+# These below are used with remote ansible python script and once installed it's better not remove them
+base_dep_pkg_list:
+   - { pkg : "python-mysqldb"  }
+   - { pkg : "python-openssl"  }
+
+#--- End of General vars block
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list		:
+   - { pkg : "docker-ce" ,  srv : "docker" , state : "started" , enabled : true }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "containerd.io"   }
+   - { pkg : "{{ web_service }}" ,  srv : "{{ web_service }}" , state : "started" , enabled : true }
+   - { pkg : "php"             }
+   - { pkg : "php-fpm"           ,  srv : "php7.0-fpm"        , state : "started" , enabled : true }
+   - { pkg : "php-mysql"       }
+   - { pkg : "php-gd"          }
+   - { pkg : "zip"             }
+   - { pkg : "unzip"           }
+   - { pkg : "mariadb-client"  }
+   - { pkg : "git"             }
+
+#
+# dir, file, template or link, depending on key values
+#
+# Will be used in template and file modules to create, delete and link.
+#
+# This dir_file_tmpl_list dict var will be used in 4 different tasks, one of 
+# each type: tmpl, dir, link and file.
+#
+# If mode not present, it will default to 0644
+# Note that one line may be used to multiple goals as defined in types.
+# "dir" uses dest only
+# "link" uses src and dest: ln -s src dest (force=yes => ln -s -f)
+# "tmpl" uses name and dest: name.j2 -> dest/name
+# "absent" uses dest to remove files
+# srv is used to restart the service, if applicable, after a template is changed.
+dir_file_tmpl_list     :
+   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , tmpl : "nginx-default.j2"   , name : "nginx-default" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , tmpl : "nginx_dom1.conf.j2" , name : "{{ domain1 }}.conf" , srv : "{{ web_service }}" }
+   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain1 }}.conf" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , tmpl : "nginx_dom1-cert.conf.j2" , name : "{{ domain1 }}-cert.conf"  , srv : "{{ web_service }}" }
+   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/default" }
+   - { types : [ "dir" ]          , dest : "{{ git_data_dir }}"                     }
+   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/nginx-default" }
+#   - { types : [ "absent" ]       , dest : "{{ www_htmldir }}/README.md" }
+
+#
+# Some INI file configuration (php mainly, but may be others)
+#
+ini_file_list           :
+   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "allow_url_fopen" , value : "Off" }
+   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "memory_limit"    , value : "128M" }
+
+cron_list		:
+- { name: "Update {{ domain1_rootdir }}" , minute: "*/5" , job: "git --git-dir={{ git_separate_dir }} --work-tree={{ domain1_rootdir }} pull --quiet"  , user: "{{ sys_username }}" , state: "present" }
+
+# Define local and remote files both for upload (copy)
+# and download (fetch).
+# Action is mandatory (same idea of types in dir_file_tmpl_list above).
+# action = list of upload or download or both
+# DON'T forget to have local files to upload to the server and local dirs when downloading
+up_down_files_list :
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" ]
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" ]
+      }
+
+# List of tar/zip balls to unarchive to specific places.
+# Must define what it creates to be idempotent.
+#unarchive_list  :
+#   - {
+#        src         : "https://github.com/lrgc01/Orm_test/archive/master.zip" ,
+#        dest        : "{{ www_htmldir }}" ,
+#        creates     : "{{ www_htmldir }}/README.md" ,
+#        owner       : "root" ,
+#        group       : "root" ,
+#        remote_src  : true
+#     }
+
+#--- End of base role block
+
+###########################################
+#
+# "users"'s role block
+#
+# Authorized_keys to fullfill in the server
+auth_keys_file_list     :
+   - { username : "azureuser"      , pub_key_file : "conf.d/testkey" }
+
+#--- End of user stuff role block
+
+###########################################
+#
+# gitcfg role
+#
+gitCloneList	:
+   - {
+	repo : "{{ github_source_repo }}" ,
+        dest : "{{ domain1_rootdir }}" ,
+        gitDir : "{{ git_separate_dir }}" ,
+        update_y_n : false ,
+        clone_y_n : true,
+        branch : "{{ git_branch }}" ,
+     }
+        
+###########################################
+#
+# SSLcrt role block variable definition
+#
+# SSL certificate and private key
+#
+# Production directory in Let's Encrypt: "https://acme-v02.api.letsencrypt.org/directory",
+# Staging directory in Let's Encrypt: "https://acme-staging-v02.api.letsencrypt.org/directory",
+#
+# Due to map filter inside the loop, cert_hash_list first element cannot be false like other lists
+# So we define another parameter to allow the system to run safely (cert_hash_list[*].enabled)
+cert_hash_list		:
+   -  {
+        enabled			: true ,
+        selfsigned		: true ,
+        pem_file                : false ,
+        account_priv_key_path	: "{{ key_base_path }}/{{ account_key }}",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-fullchain.crt",
+        crt_interchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-intermmediate.crt",
+        acme_directory		: "https://acme-staging-v02.api.letsencrypt.org/directory",
+        C			: "CA",
+        ST			: "Quebec",
+        L			: "Montreal",
+        O			: "Lrgc01 private site",
+        OU			: "Lrgc01 private site",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "{{ domain1 }}",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/{{ domain1 }}.key",
+        server_cert_path	: "{{ cert_base_path }}/{{ domain1 }}.crt",
+        local_certkey_path	: "{{ confdir }}/{{ domain1 }}.key",
+        local_cert_path		: "{{ confdir }}/{{ domain1 }}.crt",
+        web_rootdir		: "{{ domain1_rootdir }}"
+      }
+# Below other variables depend on the cert_hash_list above.
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+server_cert_n_key_list	:
+   -  { 
+        src  : "{{ cert_hash_list[0].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[0].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[0].crt_cert_path }}",
+        dest : "{{ cert_hash_list[0].server_cert_path }}"
+      }
+# srv defines if a service will be restarted upon modification in file upload
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+ssl_up_down_files_list 	:
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+
+#--- End of SSLCrt role block
+
+#
+# "finals"'s role block
+#
+later_dirs_config_list       :
+   - { enabled : true , path : "{{ git_data_dir }}"    , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
+   - { enabled : true , path : "{{ domain1_rootdir }}" , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
+
+#--- End of "finals" role block

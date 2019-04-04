@@ -1,0 +1,3 @@
+Host *.eastus.cloudapp.azure.com
+IdentityFile ~/.ssh/id_rsa
+User azureuser

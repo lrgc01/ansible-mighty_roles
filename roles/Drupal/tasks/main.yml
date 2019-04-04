@@ -1,0 +1,60 @@
+---
+#
+# Deprecated in drush 9 - use composer
+#
+#- name: Download Drupal using drush pm-download (dl) ------
+#  shell: "{{ drush_base_cmd }} dl {{ drupal_version }} --drupal-project-rename={{ drupal_basename }}"
+#  args:
+#    creates: "{{ drupal_site_rootdir }}/.htaccess"
+#    chdir: "{{ www_basedir }}"
+#  register: drupal_installed
+#  tags: drupal_site
+
+- name: Download and extract civiCRM ----------------------
+  unarchive: 
+    src: "{{ civicrm_download_url }}"
+    dest: "{{ drupal_all_module_dir }}"
+    remote_src: true
+    owner: "root"
+    group: "root"
+    mode: "a+r"
+    creates: "{{ drupal_all_module_dir }}/civicrm"
+  when: unarchived_packs is changed and false
+  register: civicrm_module_downloaded
+  tags: drupal_site
+
+- name: Install Drupal site using drush site-install (si) -
+  shell: "{{ drush_base_cmd }} si {{ drupal_si_args }}"
+  args:
+    creates: "{{ drupal_settings_file }}"
+    chdir: "{{ drupal_site_rootdir }}"
+  when: unarchived_packs is changed 
+  register: drupal_installed
+  tags: drupal_site
+
+- name: Install CiviCRM module with drush civicrm-install -
+  shell: "{{ drush_base_cmd }} civicrm-install {{ civicrm_cmd_args }}"
+  args:
+    creates: "{{ civicrm_settings_file }}"
+    chdir: "{{ drupal_site_rootdir }}"
+  when: civicrm_module_downloaded is success and false
+  register: civicrm_installed
+  tags: drupal_site
+
+# Only after 1st civicrm installation according to "changed" condition.
+- name: Enable some modules with drush --------------------
+  shell: "{{ drush_base_cmd }} pm-enable {{ item }}"
+  args:
+    chdir: "{{ drupal_site_rootdir }}"
+  when: civicrm_installed is changed
+  loop: "{{ drupal_modules_list }}"
+  register: civicrm_modules_enabled
+  tags: drupal_site
+
+- name: Run pm-update to update database if necessary -----
+  shell: "{{ drush_base_cmd }} pm-update "
+  args:
+    chdir: "{{ drupal_site_rootdir }}"
+  when: civicrm_modules_enabled is changed
+  tags: drupal_site
+

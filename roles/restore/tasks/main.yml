@@ -1,0 +1,34 @@
+---
+- name: Upload backup files ------------------------------
+  copy:
+    dest: "{{ item.remote }}"
+    src: "{{ item.local }}"
+  loop: "{{ bkp_rest_files_list }}"
+  when: bkp_rest_files_list[0] and "upload" in item.action
+  register: bkp_files_uploaded
+  tags: restore, upload_to_restore
+
+- name: Restore file hierarchy (extract backup from archive)
+  unarchive: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: "{{ item.remote_src }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+    mode:  "{{ item.mode  | default(omit) }}"
+    creates: "{{ item.creates }}"
+  loop: "{{ unarchive_bkps }}"
+  when: item.enabled
+  register: unarchive_done
+  tags: restore, restore_files
+
+- name: Restore via shell specific commands ---------------
+  shell: "{{ item.shellcmd }}"
+  args:
+    creates: "{{ item.creates }}"
+    chdir: "{{ item.chdir }}"
+    warn: false
+  loop: "{{ shell_restorecmd_list }}"
+  when: item.enabled
+  register: shell_restore_done
+  tags: restore, restore_via_shell

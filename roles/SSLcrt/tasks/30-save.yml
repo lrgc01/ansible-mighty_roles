@@ -1,0 +1,34 @@
+---
+- name: Copy new cert and key to web server's place -------
+  copy:
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+    remote_src: true
+  loop: "{{ server_cert_n_key_list }}"
+  when: server_cert_n_key_list[0]
+  register: new_cert_n_key_in_place
+  notify: Restart web server
+  tags: ssl_certificate
+
+# Specific for haproxy or other server using CRT+KEY in a PEM file
+- name: Create (or update) PEM file with CRT and KEY ------
+  shell: "cat {{ item.server_cert_path }} {{ item.server_certkey_path }} > {{ item.pem_file }}"
+  args:
+    warn: false
+  loop: "{{ cert_hash_list }}"
+  when: new_cert_n_key_in_place is changed and item.pem_file
+  register: pem_file_created
+  notify: Restart other web or proxy server
+  tags: ssl_certificate
+
+
+# We just change the order from the former upload 
+- name: Download cert and key files if needed -------------
+  fetch:
+    src: "{{ item.remote }}"
+    dest: "{{ item.local }}"
+    flat: true
+  loop: "{{ ssl_up_down_files_list }}"
+  when: ssl_up_down_files_list[0] and "download" in item.action
+  tags: ssl_certificate, key_cert_copy_only
+  

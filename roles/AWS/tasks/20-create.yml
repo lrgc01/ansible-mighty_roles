@@ -1,0 +1,139 @@
+---
+########################################################
+# Security groups and key pairs - almost aways mandatory
+- name: Create security groups ------------
+  ec2_group:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: "present"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description | default('') }}"
+    vpc_id: "{{ item.vpc_id | default(vpc_facts.vpcs[0].vpc_id) }}"
+    rules: "{{ item.rules }}"
+  loop: "{{ securityGroupList }}"
+  register: created_sg
+  when: vpc_facts is success
+  tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
+
+- name: Create EC2 key pairs --------------
+  ec2_key:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+  loop: "{{ keyPairList }}"
+  notify: Copy EC2 Private Key
+  register: keypair_registered
+  tags: create_key_pairs, create_rds_instances, create_ec2_instances, create_aws_instances
+
+#############################
+# EC2 instances
+- name: Create EC2 instances --------------
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: "present"
+    wait: "yes"
+    region: "{{ region }}"
+    instance_tags: "{{ item.tags | default(omit) }}"
+    image: "{{ item.image }}"
+    group: "{{ item.SG_name }}"
+    instance_type: "{{ item.type }}"
+    key_name: "{{ item.key_name }}"
+    vpc_subnet_id: "{{ item.subnet_id | default(pick_subnet[0]) }}"
+    assign_public_ip: "{{ item.pub_ip | default(\"yes\") }}"
+    id: "{{ region + '_' + item.tags.Name + '_' + item.type + '_' + item.image }}"
+  loop: "{{ ec2Instances }}"
+  when: ec2Instances[0] and item.state == "present" and default_subnets is success
+  vars:
+    pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list | shuffle(seed=ansible_hostname) }}"
+  register: create_ec2_instances
+  tags: create_ec2_instances, create_aws_instances
+
+#############################
+# RDS instances
+- name: Create RDS instances --------------
+  rds:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    command: create
+    region: "{{ region }}"
+    publicly_accessible: "false"
+    instance_type: "{{ item.type }}"
+    instance_name: "{{ item.name }}"
+    db_engine: "{{ item.engine }}"
+    size: "{{ item.size }}"
+    vpc_security_groups: "{{ created_sg | json_query(sg_id) }}"
+    username: "{{ item.username }}"
+    password: "{{ item.password }}"
+    tags: "{{ item.tags }}"
+  loop: "{{ rdsInstancesByName }}"
+  when: rdsInstancesByName[0] and created_sg is success
+  vars:
+    sg_id: "results[?group_name=='{{ item.sg_name }}'].group_id"
+  register: created_db_instance
+  tags: create_rds_instances, create_aws_instances
+
+##############################
+# EFS file system (to export via NFS)
+- name: Create EFS file systems -----------
+  efs:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    state: "{{ item.state }}"
+    name: "{{ item.name }}"
+    targets: "{{ item.targets | default(local_targets) }}"
+    tags: "{{ item.tags }}"
+  loop: "{{ efsInstances }}"
+  when: efsInstances[0] and item.state == "present" and default_subnets is success
+  vars:
+    local_targets: "{{ default_subnets | json_query('subnets[*].{subnet_id: subnet_id}') }}"
+  register: efs_instance_created
+  tags: create_efs_instances, create_aws_instances
+
+################################
+# CloudFront configs (CFN)
+- name: Gather CFN instances facts --------
+  cloudfront_facts:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    all_lists: "yes"
+  register: cfn_facts
+  tags: gather_cfn, change_state_all_instances, create_cfn_instances, create_aws_instances
+
+- name: Create CloudFront distribution ----
+  cloudfront_distribution:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    region: "{{ region }}"
+    state: "{{ cloudfrontInstances[0].state }}"
+    default_origin_domain_name: "{{ cloudfrontInstances[0].domainname }}"
+    enabled: "{{ cloudfrontInstances[0].enabled }}"
+    tags: "{{ cloudfrontInstances[0].tags | default(omit) }}"
+  #loop: "{{ cloudfrontInstances }}"
+  #when: cloudfrontInstances[0] and default_subnets is success
+  # When variables are defined and facts returned no list
+  when: cloudfrontInstances[0].enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
+  register: cloudfront_instance_created
+  tags: create_cfn_instances, create_aws_instances
+
+#######
+# debug
+#- name: Show debug
+#  debug:
+#    msg: "{{ default_subnets | json_query(query_by_name) }}"
+#  #loop: "{{ created_sg | json_query('results[?group_name==`rdp`].group_id') }}"
+#  #loop: "{{ created_sg | json_query(query_by_name) }}"
+#  #loop: "{{ keypair_registered | json_query('results[*].key') }}"
+#  #loop: "{{ keypair_registered | json_query(query_by_name) }}"
+#  loop: "{{ keypair_registered.results }}"
+#  when: item.key.private_key is defined
+#  vars:
+#    sg_id: "results[?group_name=='{{ rdsInstancesByName[0].sg_name }}'].group_id"
+#    #query_by_name: "results[?group_name=='{{ winSgName }}'].group_id"
+#    #query_by_name: "results[?key.name=='test-key'].key"
+#    query_by_name: "subnets[*].{subnet_id: subnet_id}"
+#    #query_by_name: "results[?key.private_key!=''].key"
+#  tags: show_debug

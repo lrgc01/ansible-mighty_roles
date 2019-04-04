@@ -1,0 +1,122 @@
+---
+# SSLcrt example yml var file
+#
+# web service used:
+web_service		: "nginx"
+#
+# SSL certificate and private key
+#
+# Production directory in Let's Encrypt: "https://acme-v02.api.letsencrypt.org/directory",
+# Staging directory in Let's Encrypt: "https://acme-staging-v02.api.letsencrypt.org/directory",
+#
+key_base_path		: "/etc/ssl/private"
+cert_base_path		: "/etc/ssl/certs"
+#server_certkey		: 
+#   - "{{ key_base_path }}/stg-drupal.key"
+#   - "{{ key_base_path }}/drupal.key"
+#server_cert		: 
+#   - "{{ cert_base_path }}/stg-drupal.crt"
+#   - "{{ cert_base_path }}/drupal.crt"
+domain1			: "lrgc01.uk.to"
+domain2			: "lrgc01.us.to"
+cert_name_prefix	: "stg-letsencrypt"
+cert_name_prefix2	: "stg-{{ domain2 }}"
+# Due to map filter inside the loop, cert_hash_list first element cannot be false like other lists
+# So we define another parameter to allow the system to run safely (cert_hash_list.enabled)
+cert_hash_list		:
+   -  {
+        enabled			: false ,
+        account_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix }}-account-key.key",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-fullchain.crt",
+        crt_interchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-intermmediate.crt",
+        acme_directory		: "https://acme-staging-v02.api.letsencrypt.org/directory",
+        C			: "GB",
+        ST			: "England",
+        L			: "London",
+        O			: "Ansible test",
+        OU			: "Ansible test",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "lrgc01.uk.to",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/stg-drupal.key",
+        server_cert_path	: "{{ cert_base_path }}/stg-drupal.crt",
+        local_certkey_path	: "{{ confdir }}/stg-drupal.key",
+        local_cert_path		: "{{ confdir }}/stg-drupal.crt",
+        web_rootdir		: "/var/www/Drupal-site"
+      }
+   -  {
+        enabled			: false ,
+        account_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix }}-account-key.key",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix2 }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix2 }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix2 }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix2 }}-fullchain.crt",
+        crt_interchain_path 	: "{{ cert_base_path }}/{{ cert_name_prefix2 }}-intermmediate.crt",
+        acme_directory		: "https://acme-staging-v02.api.letsencrypt.org/directory",
+        C			: "US",
+        ST			: "New York",
+        L			: "New York",
+        O			: "Ansible test",
+        OU			: "Ansible test",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "{{ domain2 }}",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/{{ domain2 }}.key",
+        server_cert_path	: "{{ cert_base_path }}/{{ domain2 }}.crt",
+        local_certkey_path	: "{{ confdir }}/{{ domain2 }}.key",
+        local_cert_path		: "{{ confdir }}/{{ domain2 }}.crt",
+        web_rootdir		: "/var/www/html"
+    }
+server_cert_n_key_list	:
+   -  false
+   -  { 
+        src  : "{{ cert_hash_list[0].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[0].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[0].crt_cert_path }}",
+        dest : "{{ cert_hash_list[0].server_cert_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[1].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[1].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[1].crt_cert_path }}",
+        dest : "{{ cert_hash_list[1].server_cert_path }}"
+      }
+# srv defines if a service will be restarted upon modification in file upload
+ssl_up_down_files_list 	:
+   -  false
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[1].local_certkey_path }}",
+        remote : "{{ cert_hash_list[1].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[1].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[1].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+

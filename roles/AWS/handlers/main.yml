@@ -1,0 +1,10 @@
+---
+- name: Copy EC2 Private Key
+  copy:
+    content: "{{ item.key.private_key }}"
+    dest: "{{ confdir }}/{{ item.key.name }}.pem"
+    mode: "0600"
+  loop: "{{ keypair_registered.results }}"
+  when: item.key.private_key is defined
+  tags: create_key_pairs, create_rds_instance, create_ec2_instance, create_instance
+

@@ -1,0 +1,31 @@
+---
+- name: Create some general purpose users -----------------
+  user:
+    name: "{{ item.username }}"
+    comment: "{{ item.comment }}"
+    generate_ssh_key: "{{ item.sshkey }}"
+    groups: "{{ item.groups }}"
+    append: true
+  loop: "{{ users_list }}"
+  when: users_list[0]
+  register: users_created
+  tags: base_users
+
+- name: Retrieve priv key from list of users --------------
+  fetch: 
+    dest: "{{ confdir }}/{{ item.username }}_priv_key"
+    src: "~{{ item.username }}/.ssh/id_rsa"
+    flat: true
+  loop: "{{ users_list }}"
+  when: users_list[0] and item.sshkey
+  tags: base_users, auth_keys
+
+- name: Fill in authorized_keys to each user of a list ----
+  authorized_key:
+    user: "{{ item.username }}"
+    state: present
+    key: "{{ lookup('file', item.pub_key_file ) }}"
+  loop: "{{ auth_keys_file_list }}"
+  when: auth_keys_file_list[0]
+  tags: base_users, auth_keys
+

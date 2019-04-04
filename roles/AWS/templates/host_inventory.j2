@@ -1,0 +1,10 @@
+{%- for instance in ec2_facts.instances -%}
+  {%- if instance.tags.Name is defined and instance.public_dns_name is defined -%}
+[{{ instance.tags.Group }}]
+{{ instance.public_dns_name }}
+
+#[{{ instance.tags.Group }}:vars]
+#ansible_python_interpreter=/usr/bin/python3
+
+  {%- endif -%}
+{%- endfor -%}

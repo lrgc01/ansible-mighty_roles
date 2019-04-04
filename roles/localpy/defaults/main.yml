@@ -1,0 +1,7 @@
+---
+# Python example yml var file
+#
+# boto* is for AWS so use in localhost only
+#pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+pip_install_list        : [ false ]
+

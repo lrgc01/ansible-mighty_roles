@@ -1,0 +1,36 @@
+---
+- name: Grant repodir permissions to git user -------------
+  file:
+    path: "{{ git_repodir }}"
+    state: directory
+    owner: "{{ git_user }}"
+    group: "{{ git_user }}"
+    mode: "g+rwx"
+    recurse: false
+  when: git_repodir != false
+  register: git_perms_in_repodir
+  tags: git_config
+
+- name: Create some git projects on server ----------------
+  shell: "su - {{ git_user }} -c \"/usr/bin/git init --bare {{ git_repodir }}/{{ item }}\""
+  args:
+    creates: "{{ item }}"
+    chdir: "{{ git_repodir }}"
+    warn: false
+  loop: "{{ project_list }}"
+  when: project_list[0] and git_perms_in_repodir is success and git_repodir != false
+  register: git_repos_created
+  tags: git_config
+
+- name: Clone a remote repo in a separate git dir ---------
+  git:
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    separate_git_dir: "{{ item.gitDir }}"
+    update: "{{ item.update_y_n | default(omit) }}"
+    clone: "{{ item.clone_y_n | default(omit) }}"
+    version: "{{ item.branch | default(omit) }}"
+  loop: "{{ gitCloneList }}"
+  when: gitCloneList[0]
+  register: git_repo_cloned
+  tags: git_config, git_clone

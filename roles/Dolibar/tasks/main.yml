@@ -1,0 +1,12 @@
+---
+# Using composer ansible module is not idempontent with 'create-project'
+# command. The output error claims to already have a project directory, of course.
+# Will fallback to shell ansible module in this case.
+- name: Install a composer project --------
+  shell: "{{ composer_cmd }} create-project {{ drupal_version }} --drupal-project-rename={{ drupal_basename }}"
+  args:
+    creates: "{{ drupal_site_rootdir }}/.htaccess"
+    chdir: "{{ www_basedir }}"
+  when: composer_done is success and directories_in_place is success
+  register: drupal_installed
+  tags: drupal_site

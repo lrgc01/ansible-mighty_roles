@@ -1,0 +1,181 @@
+---
+##############################################
+#
+# Python role block variable definition
+#
+# boto* is for AWS so use in localhost only
+pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+#pip_install_list        : [ false ]
+
+#--- End of python role block
+
+##############################################
+#
+# General var definition block - to all roles
+#
+# Our web server definitions
+#
+sys_username            : "azureuser"
+my_workdir              : "~{{ sys_username }}"
+www_basedir             : "/var/www"
+www_htmldir             : "{{ www_basedir }}/html"
+www_username            : "www-data"
+#domain1_rootdir         : "{{ www_htmldir }}"
+#web_service             : "nginx"
+#
+
+# To do sql stuff
+soft_distrib            : "Orm_test"
+stable_version          : "stable"
+sql_source_dir          : "{{ my_workdir }}/{{ soft_distrib }}-{{ stable_version }}"
+
+
+# These below are used with remote ansible python script and once installed it's better not remove them
+base_dep_pkg_list:
+   - { pkg : "python-mysqldb"  }
+   - { pkg : "python-openssl"  }
+
+#--- End of General vars block
+
+##############################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list		:
+   - { pkg : "mariadb-server"  }
+   - { pkg : "zip"             }
+   - { pkg : "unzip"           }
+
+
+# List of tar/zip balls to unarchive to specific places.
+# Must define what it creates to be idempotent.
+# ### this is just to retrieve sql.gz script from stable branch
+unarchive_list  :
+   - {
+        src         : "https://github.com/lrgc01/{{ soft_distrib }}/archive/{{ stable_version }}.zip" ,
+        dest        : "{{ my_workdir }}" ,
+        creates     : "{{ sql_source_dir }}/README.md" ,
+        owner       : "root" ,
+        group       : "root" ,
+        remote_src  : true
+     }
+
+#--- End of base role block
+
+###########################################
+#
+# "users"'s role block
+#
+# Authorized_keys to fullfill in the server
+auth_keys_file_list     :
+   - { username : "{{ sys_username }}"      , pub_key_file : "conf.d/testkey" }
+
+#--- End of user stuff role block
+
+
+##############################################
+#
+# DB_adm role block variable definition
+#
+
+#
+# DB AWS instance used widely
+#db_host : "websiteinstance.ctxnidj2utoz.us-east-2.rds.amazonaws.com"
+db_host : "localhost"
+db_name : "my_test"
+db_user : "dbuser1"
+db_pass : "dbuserpass123"
+db_admuser : "root"
+db_admpass : ""
+
+#
+# 'db_list[*].dbcreate' switches one entry on/off
+# drop is used un role/uninst to remove a database
+db_list              :
+   -  {
+        dbcreate     : true ,
+        drop         : false ,
+        admuser      : "{{ db_admuser }}", 
+        admpass      : "" ,
+        host         : "{{ db_host }}",
+        user         : "{{ db_user }}" ,
+        pass         : "{{ db_pass }}" ,
+        dbname       : "{{ db_name }}" ,
+        encoding     : "utf8mb4" ,
+        collation    : "utf8mb4_general_ci" ,
+        perms        : "{{ db_name }}.*:ALL",
+        append_privs : true 
+      }
+
+#--- End of DB_adm role block
+
+
+# 
+# Backup and Restore roles block variables definition
+#
+sql_bkp_cmd   : "mysqldump -u {{ db_admuser }} -h {{ db_host }} -p{{ db_admpass }} --opt "
+#sql_rest_cmd  : "mysql -u {{ db_admuser }} -h {{ db_host }} -p{{ db_admpass }} "
+#sql_bkp_cmd   : "mysqldump --opt "
+sql_rest_cmd  : "mysql"
+remote_bkpdir : "{{ my_workdir }}"
+DB_bkp        : "{{ bkptag }}.sql.gz"
+sql_ini_test  : "sql.gz"
+docs_bkp      : "{{ bkptag }}.documents.tgz"
+DB_rest       : "DB_first_install.sql.gz"
+docs_rest     : "first_install.documents.tgz"
+local_bkp_dir : "{{ confdir }}/bkprest"
+bkp_rest_files_list :
+   - false
+shell_bkpcmd_list   :
+   -  {
+         enabled  : false ,
+         shellcmd : "{{ sql_bkp_cmd }} {{ db_name }} | gzip -c > {{ DB_bkp }}" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ DB_bkp }}"
+      }
+   -  {
+         enabled  : false ,
+         shellcmd : "tar -czf {{ docs_bkp }} {{ www_htmldir }}" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ docs_bkp }}"
+      }
+# used for mysql
+shell_restorecmd_list   :
+   -  {
+         enabled  : true ,
+         shellcmd : "zcat {{ sql_source_dir }}/include/{{ sql_ini_test }} | {{ sql_rest_cmd }} {{ db_name }} ; touch sql.restored" ,
+         chdir    : "{{ sql_source_dir }}/include" ,
+         creates  : "sql.restored"
+      }
+# restore with tar goes here
+unarchive_bkps    :
+   -  {
+         enabled    : false ,
+         src        : "{{ remote_bkpdir }}/{{ docs_rest }}" ,
+         dest       : "/" ,
+         remote_src : "yes",
+         creates    : "{{ www_htmldir }}/index.html"
+      }
+
+#--- End Backup and Restore block
+
+#########################################
+#
+# Final adjusment block
+#
+later_lineinfile_config_list :
+   - {
+       enabled : true ,
+       path   : "/etc/mysql/mariadb.conf.d/50-server.cnf",
+       owner  : "root" ,
+       group  : "root" ,
+       mode   : "0644" ,
+       regexp : ".*bind-address.*=.*" ,
+       line   : "bind-address = 0.0.0.0" , 
+       srv    : "mariadb"
+     }
+

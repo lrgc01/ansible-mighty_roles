@@ -1,0 +1,20 @@
+---
+# Gitcfg example yml var file
+#
+# For git
+#
+git_repodir	: false
+#git_repodir             : "/repos"
+git_user                : "git"
+#
+# DEFINED in users
+#-----------------
+# auth_keys_file_list	:
+#   - { localkeyfile     : "conf.d/luiz_pub_key" , remoteuser : "{{ git_user }}" }
+#   - { localkeyfile     : "conf.d/nono_pub_key" , remoteuser : "{{ git_user }}" }
+project_list            :
+   - false
+   - "drupal.git"
+   - "test.git"
+gitRepoList	:
+   - false

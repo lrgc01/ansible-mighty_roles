@@ -1,0 +1,7 @@
+---
+later_dir_file_tmpl_list     :
+   - { enabled : false }
+later_dirs_config_list       :
+   - { enabled : false }
+later_lineinfile_config_list :
+   - { enabled : false }

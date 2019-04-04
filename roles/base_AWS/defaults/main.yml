@@ -1,0 +1,6 @@
+---
+#
+# Local basic configuration
+#
+pip_install_list: [ "botocore" , "boto" , "boto3" ]
+

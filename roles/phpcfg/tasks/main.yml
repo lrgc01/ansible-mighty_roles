@@ -1,0 +1,23 @@
+---
+- name: Composer- require, remove, but no create-project --
+  composer:
+    command: "{{ item.command }}"
+    arguments: "{{ item.arguments }}"
+    global_command: "{{ item.global }}"
+    working_dir: "{{ item.working_dir | default (omit) }}"
+  loop: "{{ composer_list }}"
+  when: composer_list[0].command and item.command != "create-project"
+  register: composer_done
+  tags: php_config
+
+# Composer doesn't handle create-project idempotently, so 
+# fall back to shell command:
+- name: Composer create-project using command line --------
+  shell: "composer --quiet create-project {{ item.arguments }}"
+  args:
+    creates: "{{ item.creates }}"
+    chdir: "{{ item.working_dir | default (omit) }}"
+  loop: "{{ composer_list }}"
+  when: composer_list[0].command and item.command == "create-project"
+  register: composer_create_proj_done
+  tags: php_config

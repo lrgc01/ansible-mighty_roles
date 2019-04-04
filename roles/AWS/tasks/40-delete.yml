@@ -1,0 +1,36 @@
+---
+- name: Delete RDS instance by name -------
+  rds:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    command: delete
+    region: "{{ region }}"
+    instance_name: "{{ item }}"
+  loop: "{{ db_instance_name_to_delete }}"
+  when: really_delete_rds and db_instance_name_to_delete is defined
+  tags: delete_aws_instances, delete_rds_instances
+
+# Delete conditions are more restrictive because 
+# variable really_delete must be true|yes besides the 
+# list of ids to delete
+- name: Delete EC2 instances --------------
+  ec2:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    state: absent
+    region: "{{ region }}"
+    instance_ids: "{{ item }}"
+  loop: "{{ ec2_instance_ids_to_delete }}"
+  when: really_delete_ec2 and ec2_instance_ids_to_delete is defined
+  register: delete_ec2_instances
+  tags: delete_aws_instances, delete_ec2_instances
+
+- name: Remove key pair by its name -------
+  ec2_key:
+    aws_access_key: "{{ aws_access_key }}"
+    aws_secret_key: "{{ aws_secret_key }}"
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ keys_to_remove_by_name }}"
+  when: really_delete_keys and keys_to_remove_by_name is defined
+  tags: delete_keys

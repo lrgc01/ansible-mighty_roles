@@ -1,0 +1,52 @@
+---
+- name: Generate private key for account and csr ----------
+  openssl_privatekey:
+    path: "{{ item }}"
+  loop: "{{ cert_hash_list | map(attribute='account_priv_key_path') | list }} + {{ cert_hash_list | map(attribute='csr_priv_key_path') | list }}"
+  when: cert_hash_list is defined and cert_hash_list[0].enabled
+  register: private_key_created
+  tags: ssl_certificate, acme_account, selfsigned_crt
+
+- name: Create local CSR certificate ----------------------
+  openssl_csr:
+    path: "{{ item.csr_cert_path }}"
+    privatekey_path: "{{ item.csr_priv_key_path }}"
+    C: "{{ item.C }}"
+    ST: "{{ item.ST }}"
+    L: "{{ item.L }}"
+    O: "{{ item.O }}"
+    OU: "{{ item.OU }}"
+    E: "{{ item.email_address }}"
+    CN: "{{ item.CN }}"
+  loop: "{{ cert_hash_list }}"
+  when: private_key_created is success and cert_hash_list is defined and item.enabled
+  register: csr_cert_created
+  tags: ssl_certificate, selfsigned_crt
+
+- name: Create ACME account with respective email ---------
+  acme_account:
+    account_key_src: "{{ item.account_priv_key_path }}"
+    acme_version: '2'
+    acme_directory: "{{ item.acme_directory }}"
+    terms_agreed: yes
+    state: present
+    allow_creation: "{{ item.allow_creation_y_n }}"
+    contact:
+      - "mailto:{{ item.email_address }}"
+  loop: "{{ cert_hash_list }}"
+  when: private_key_created is success and cert_hash_list is defined 
+        and item.enabled and not item.selfsigned 
+  register: acme_account_created
+  tags: ssl_certificate, acme_account
+
+- name: Generate selfsigned certificate -------------------
+  openssl_certificate:
+    path: "{{ item.crt_cert_path }}"
+    privatekey_path: "{{ item.csr_priv_key_path }}"
+    csr_path: "{{ item.csr_cert_path }}"
+    provider: "selfsigned"
+  loop: "{{ cert_hash_list }}"
+  when: private_key_created is success and csr_cert_created is changed 
+        and item.enabled and item.selfsigned
+  register: selfsigned_created
+  tags: ssl_certificate, selfsigned_crt

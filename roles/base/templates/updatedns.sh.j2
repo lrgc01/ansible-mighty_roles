@@ -1,0 +1,23 @@
+#!/bin/sh
+#FreeDNS updater script
+DOM_URL_PAIR="
+{%- for domain in updatedns_pair_list %}
+  {{ domain.updateurl }} {{ domain.domainname }}  
+{%- endfor -%}
+"
+
+set $DOM_URL_PAIR
+
+while [ "$1" != '' ]
+do
+UPDATEURL=$1
+DOMAIN=$2
+shift 2
+registered=$(nslookup ${DOMAIN}|tail -n2|grep A|sed s/[^0-9.]//g)
+
+  current=$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
+       [ "$current" != "$registered" ] && {                           
+          wget -q -O /dev/null ${UPDATEURL}
+          echo "DNS updated on:"; date
+  }
+done
