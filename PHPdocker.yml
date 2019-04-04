@@ -8,6 +8,6 @@
    - base
    - phpcfg
    - users
-   - gitcfg
-   - SSLcrt
-   - finals
+#   - gitcfg
+#   - SSLcrt
+#   - finals

@@ -78,15 +78,15 @@ dep_pkg_list		:
    - { pkg : "docker-ce" ,  srv : "docker" , state : "started" , enabled : true }
    - { pkg : "docker-ce-cli"   }
    - { pkg : "containerd.io"   }
-   - { pkg : "{{ web_service }}" ,  srv : "{{ web_service }}" , state : "started" , enabled : true }
-   - { pkg : "php"             }
-   - { pkg : "php-fpm"           ,  srv : "php7.0-fpm"        , state : "started" , enabled : true }
-   - { pkg : "php-mysql"       }
-   - { pkg : "php-gd"          }
-   - { pkg : "zip"             }
-   - { pkg : "unzip"           }
-   - { pkg : "mariadb-client"  }
-   - { pkg : "git"             }
+#   - { pkg : "{{ web_service }}" ,  srv : "{{ web_service }}" , state : "started" , enabled : true }
+#   - { pkg : "php"             }
+#   - { pkg : "php-fpm"           ,  srv : "php7.0-fpm"        , state : "started" , enabled : true }
+#   - { pkg : "php-mysql"       }
+#   - { pkg : "php-gd"          }
+#   - { pkg : "zip"             }
+#   - { pkg : "unzip"           }
+#   - { pkg : "mariadb-client"  }
+#   - { pkg : "git"             }
 
 #
 # dir, file, template or link, depending on key values
@@ -104,41 +104,41 @@ dep_pkg_list		:
 # "absent" uses dest to remove files
 # srv is used to restart the service, if applicable, after a template is changed.
 dir_file_tmpl_list     :
-   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , tmpl : "nginx-default.j2"   , name : "nginx-default" }
-   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , tmpl : "nginx_dom1.conf.j2" , name : "{{ domain1 }}.conf" , srv : "{{ web_service }}" }
-   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain1 }}.conf" }
-   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , tmpl : "nginx_dom1-cert.conf.j2" , name : "{{ domain1 }}-cert.conf"  , srv : "{{ web_service }}" }
-   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/default" }
-   - { types : [ "dir" ]          , dest : "{{ git_data_dir }}"                     }
-   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/nginx-default" }
+#   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , tmpl : "nginx-default.j2"   , name : "nginx-default" }
+#   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , tmpl : "nginx_dom1.conf.j2" , name : "{{ domain1 }}.conf" , srv : "{{ web_service }}" }
+#   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain1 }}.conf" }
+#   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , tmpl : "nginx_dom1-cert.conf.j2" , name : "{{ domain1 }}-cert.conf"  , srv : "{{ web_service }}" }
+#   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/default" }
+#   - { types : [ "dir" ]          , dest : "{{ git_data_dir }}"                     }
+#   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/nginx-default" }
 #   - { types : [ "absent" ]       , dest : "{{ www_htmldir }}/README.md" }
 
 #
 # Some INI file configuration (php mainly, but may be others)
 #
-ini_file_list           :
-   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "allow_url_fopen" , value : "Off" }
-   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "memory_limit"    , value : "128M" }
+#ini_file_list           :
+#   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "allow_url_fopen" , value : "Off" }
+#   - { path : "/etc/php/7.2/fpm/php.ini" , section : "PHP" , option : "memory_limit"    , value : "128M" }
 
-cron_list		:
-- { name: "Update {{ domain1_rootdir }}" , minute: "*/5" , job: "git --git-dir={{ git_separate_dir }} --work-tree={{ domain1_rootdir }} pull --quiet"  , user: "{{ sys_username }}" , state: "present" }
+#cron_list		:
+#- { name: "Update {{ domain1_rootdir }}" , minute: "*/5" , job: "git --git-dir={{ git_separate_dir }} --work-tree={{ domain1_rootdir }} pull --quiet"  , user: "{{ sys_username }}" , state: "present" }
 
 # Define local and remote files both for upload (copy)
 # and download (fetch).
 # Action is mandatory (same idea of types in dir_file_tmpl_list above).
 # action = list of upload or download or both
 # DON'T forget to have local files to upload to the server and local dirs when downloading
-up_down_files_list :
-   -  { 
-        local  : "{{ cert_hash_list[0].local_certkey_path }}",
-        remote : "{{ cert_hash_list[0].server_certkey_path }}",
-        action : [ "upload" ]
-      }
-   -  { 
-        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
-        remote : "{{ cert_hash_list[0].server_cert_path }}",
-        action : [ "upload" ]
-      }
+#up_down_files_list :
+#   -  { 
+#        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+#        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+#        action : [ "upload" ]
+#      }
+#   -  { 
+#        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+#        remote : "{{ cert_hash_list[0].server_cert_path }}",
+#        action : [ "upload" ]
+#      }
 
 # List of tar/zip balls to unarchive to specific places.
 # Must define what it creates to be idempotent.
@@ -160,7 +160,7 @@ up_down_files_list :
 #
 # Authorized_keys to fullfill in the server
 auth_keys_file_list     :
-   - { username : "azureuser"      , pub_key_file : "conf.d/testkey" }
+#   - { username : "azureuser"      , pub_key_file : "conf.d/testkey" }
 
 #--- End of user stuff role block
 
@@ -168,15 +168,15 @@ auth_keys_file_list     :
 #
 # gitcfg role
 #
-gitCloneList	:
-   - {
-	repo : "{{ github_source_repo }}" ,
-        dest : "{{ domain1_rootdir }}" ,
-        gitDir : "{{ git_separate_dir }}" ,
-        update_y_n : false ,
-        clone_y_n : true,
-        branch : "{{ git_branch }}" ,
-     }
+#gitCloneList	:
+#   - {
+#	repo : "{{ github_source_repo }}" ,
+#        dest : "{{ domain1_rootdir }}" ,
+#        gitDir : "{{ git_separate_dir }}" ,
+#        update_y_n : false ,
+#        clone_y_n : true,
+#        branch : "{{ git_branch }}" ,
+#     }
         
 ###########################################
 #
@@ -249,8 +249,8 @@ ssl_up_down_files_list 	:
 #
 # "finals"'s role block
 #
-later_dirs_config_list       :
-   - { enabled : true , path : "{{ git_data_dir }}"    , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
-   - { enabled : true , path : "{{ domain1_rootdir }}" , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
+#later_dirs_config_list       :
+#   - { enabled : true , path : "{{ git_data_dir }}"    , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
+#   - { enabled : true , path : "{{ domain1_rootdir }}" , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
 
 #--- End of "finals" role block
