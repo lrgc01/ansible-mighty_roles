@@ -6,7 +6,7 @@
 #  tags: update_repository
 #
 - name: Install remote python if not installed ------------
-  raw: "if [ ! -f /usr/bin/python ] ; then apt install -y python ; exit 0 ; fi"
+  raw: "if [ ! -f /usr/bin/python ] ; then apt install -y python ; exit 0 ; fi; exit 0"
   tags: bootstrap_python
 
 - name: Install requisite packages to run apt_key ---------
@@ -40,9 +40,25 @@
   apt: 
     update_cache: "yes"
     upgrade: "{{ update_cache_y_n }}"
-  when: update_cache_y_n == "yes" or apt_repos_done is changed
+  when: apt_repos_done is changed
   register: updated_cache
   tags: update_repository
+
+# Some dependencies modules should be done early
+- name: Preliminary dependency install -- python-pip ------
+  apt: 
+    pkg: "python-pip"
+    state: "present"
+  when: pip_install_list is defined
+  register: pip_installed
+  tags: bootstrap_python
+
+- name: Install local python dependencies via pip ---------
+  pip:
+    name: "{{ item }}"
+  loop: "{{ pip_install_list }}"
+  when: pip_install_list is defined and pip_installed is success
+  tags: bootstrap_python
 
 - name: Install vary basic packages to run ansible --------
   apt:

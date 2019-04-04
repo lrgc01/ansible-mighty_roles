@@ -1,15 +1,17 @@
 ---
-# Should be used only locally: e.g.: aws stuff
+# Some dependencies modules should be done early
 - name: Preliminary dependency install -- python-pip ------
   apt: 
     pkg: "python-pip"
     state: "present"
-  tags: python_bootstrap
+  when: pip_install_list[0]
+  register: pip_installed
+  tags: bootstrap_python
 
 - name: Install local python dependencies via pip ---------
   pip:
     name: "{{ item }}"
   loop: "{{ pip_install_list }}"
-  when: pip_install_list[0]
-  tags: python_bootstrap
+  when: pip_install_list[0] and pip_installed is success
+  tags: bootstrap_python
 

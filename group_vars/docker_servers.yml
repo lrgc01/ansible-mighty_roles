@@ -9,20 +9,14 @@ listAptRepos :
   - {
        state   : "present" ,
        keyUrl  : "https://download.docker.com/linux/debian/gpg" ,
-       repoStr : "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable",
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable" ,
+       keyId   : "0EBFCD88" ,
     }
 
+# Some very early pip python packs
+pip_install_list        : [ "docker" ]
+
 #--- End of common role block
-
-###########################################
-#
-# Python role block variable definition
-#
-# boto* is for AWS so use in localhost only
-pip_install_list        : [ "botocore" , "boto" , "boto3" ]
-#pip_install_list        : [ false ]
-
-#--- End of python role block
 
 ###########################################
 #
@@ -103,7 +97,7 @@ dep_pkg_list		:
 # "tmpl" uses name and dest: name.j2 -> dest/name
 # "absent" uses dest to remove files
 # srv is used to restart the service, if applicable, after a template is changed.
-dir_file_tmpl_list     :
+#dir_file_tmpl_list     :
 #   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , tmpl : "nginx-default.j2"   , name : "nginx-default" }
 #   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , tmpl : "nginx_dom1.conf.j2" , name : "{{ domain1 }}.conf" , srv : "{{ web_service }}" }
 #   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain1 }}.conf" }
@@ -254,3 +248,72 @@ ssl_up_down_files_list 	:
 #   - { enabled : true , path : "{{ domain1_rootdir }}" , owner: "{{ sys_username }}" , group : "{{ sys_username }}" , mode : "u+rw,a+rX" , recurse : true , }
 
 #--- End of "finals" role block
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'networks', all others may be omitted:
+#    networks (for now networks must be defined - or use bridge)
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+#  - {
+#        enabled         : false ,
+#        name            : "maven" ,
+#        image           : "lrgc01/scratch_maven" ,
+#        volumes         : [ "maven:/opt/maven" , ] ,
+#        state           : "present" ,
+#    }
+dockerContainerList :
+  - {
+        enabled         : true ,
+        name            : "maven" ,
+        image           : "lrgc01/scratch_maven" ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "maven:/opt/maven" , ] ,
+        state           : "present" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "jenkins" ,
+        image           : "lrgc01/jenkins" ,
+        networks        : [ { name : "jenkins_net" } ] ,
+        volumes         : [ "jenkins:/var/lib/jenkins" , "/home:/home", ] ,
+        volumes_from    : [ "maven" ] ,
+        working_dir     : "/var/lib/jenkins" ,
+        user            : "jenkins" ,
+        published_ports : [ "0.0.0.0:8080:8080" ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "python" ,
+        image           : "lrgc01/pytest_pyinstaller" ,
+        networks        : [ { name : "jenkins_net" } ] ,
+        volumes         : [ "/home:/home", ] ,
+        volumes_from    : [ "jenkins" ] ,
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "nodejs" ,
+        image           : "lrgc01/nodejs" ,
+        networks        : [ { name : "jenkins_net" } ] ,
+        volumes         : [ "/home:/home", ] ,
+        volumes_from    : [ "jenkins" ] ,
+        published_ports : [ "0.0.0.0:3030:3000" ] , 
+        state           : "started" ,
+    }
