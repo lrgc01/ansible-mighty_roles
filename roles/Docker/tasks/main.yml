@@ -1,15 +1,15 @@
 ---
-- name: my debug
-  debug:
-     msg: "{{ item }}"
-  ##loop: "{{ query('dict',dockerContainerList) }}"
-  loop: "{{ mylist2 | map(attribute='name') | list | difference(['bridge','none','host']) }}"
-  ##when: dockerContainerList[0] and item.enabled and item.networks is defined
-  vars: 
-    ##mylist: "{{ dockerContainerList |  items2dict(key_name='name', value_name='networks') }}"
-    mylist2: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
-    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
-  tags: my_debug
+#- name: my debug
+#  debug:
+#     msg: "{{ item }}"
+#  ##loop: "{{ query('dict',dockerContainerList) }}"
+#  loop: "{{ mylist2 | map(attribute='name') | list | difference(['bridge','none','host']) }}"
+#  ##when: dockerContainerList[0] and item.enabled and item.networks is defined
+#  vars: 
+#    ##mylist: "{{ dockerContainerList |  items2dict(key_name='name', value_name='networks') }}"
+#    mylist2: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+#    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
+#  tags: my_debug
 
 - name: Docker network deployment -------------------------
   docker_network:
