@@ -270,13 +270,6 @@ ssl_up_down_files_list 	:
 # must be a list of dict.
 # If omitted, 'image' will default to container's name.
 #
-#  - {
-#        enabled         : false ,
-#        name            : "maven" ,
-#        image           : "lrgc01/scratch_maven" ,
-#        volumes         : [ "maven:/opt/maven" , ] ,
-#        state           : "present" ,
-#    }
 dockerContainerList :
   - {
         enabled         : true ,
@@ -317,3 +310,5 @@ dockerContainerList :
         published_ports : [ "0.0.0.0:3030:3000" ] , 
         state           : "started" ,
     }
+#
+#--- End of Docker role block

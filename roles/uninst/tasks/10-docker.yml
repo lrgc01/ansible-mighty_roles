@@ -1,0 +1,31 @@
+---
+- name: Docker - stop and remove container --------------
+  docker_container:
+     name: "{{ item.name }}"
+     image: "{{ item.image }}"
+     networks: "{{ item.networks | default(omit) }}"
+     links: "{{ item.links | default(omit) }}"
+     volumes: "{{ item.volumes | default(omit) }}"
+     volumes_from: "{{ item.volumes_from | default(omit) }}"
+     working_dir: "{{ item.working_dir | default(omit) }}"
+     user: "{{ item.user | default(omit) }}"
+     published_ports: "{{ item.published_ports | default(omit) }}"
+     purge_networks: "{{ item.purge_networks | default(omit) }}"
+     state: absent
+  loop: "{{ dockerContainerList }}"
+  when: dockerContainerList[0] and item.enabled 
+  register: container_removed
+  tags: docker, docker_container
+
+- name: Docker - purge networks -------------------------
+  docker_network:
+     name: "{{ item }}"
+     state: absent
+     force: yes
+  loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none','host']) }}"
+  vars:
+    myHashNetList: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+  when: dockerContainerList[0] and container_removed is success
+  register: docker_networks_removed
+  tags: docker, docker_networks
+

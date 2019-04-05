@@ -1,3 +1,36 @@
 ---
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'networks', all others may be omitted:
+#    networks (for now networks must be defined - or use bridge)
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+#dockerContainerList :
+#  - {   
+#        enabled         : true ,
+#        name            : "maven" ,
+#        image           : "lrgc01/scratch_maven" ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "maven:/opt/maven" , ] ,
+#        state           : "present" ,
+#    }
+
 dockerContainerList : 
    - false
+#
+#--- End of Docker role block

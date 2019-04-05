@@ -1,0 +1,21 @@
+---
+# untrust and unregister repositories
+- name: Remove trusted added apt repositories -----------
+  apt_repository:
+    repo: "{{ item.repoStr }}"
+    state: absent
+  loop: "{{ listAptRepos }}"
+  when: listAptRepos[0] and item.state and item.repoStr
+  register: rem_apt_repos_done
+  tags: remove_repository
+
+# remove apt keys
+- name: Remove apt repo keys from apt configuration -----
+  apt_key:
+    url: "{{ item.keyUrl }}"
+    state: absent
+    id: "{{ item.keyId }}"
+  loop: "{{ listAptRepos }}"
+  when: listAptRepos[0] and item.state and item.keyUrl and rem_apt_repos_done is success
+  register: rem_apt_keys_done
+  tags: remove_repository, remove_apt_keys

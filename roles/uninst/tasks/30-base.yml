@@ -1,0 +1,30 @@
+---
+- name: Uninstall packages dependencies -----------------
+  apt: 
+    pkg: "{{ item.pkg }}" 
+    state: "absent"
+    purge: "{{ purge_y_n }}" 
+    autoremove: "{{ autoremove_y_n }}"
+  loop: "{{ dep_pkg_list }}"
+  when: dep_pkg_list[0]
+  register: dep_pkg_uninstalled
+  tags: uninstall_dep_pkg, remove_files_n_dirs
+
+- name: Remove basic files and/or directories -----------
+  file: 
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ base_file_dir_remove_list }}"
+  when: base_file_dir_remove_list is defined 
+  register: file_n_dir_removed
+  tags: remove_files_n_dirs
+
+# Remove other parts (check condition below)
+- name: Purge later files and/or directories ------------
+  file: 
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ file_dir_remove_list }}"
+  when: purge_y_n == "true" and autoremove_y_n == "true" and dep_pkg_uninstalled is success
+  register: file_n_dir_removed
+  tags: remove_files_n_dirs

@@ -1,20 +1,20 @@
 ---
-#- name: my debug
-  #debug:
-     #msg: "{{ item }}"
+- name: my debug
+  debug:
+     msg: "{{ item }}"
   ##loop: "{{ query('dict',dockerContainerList) }}"
-  #loop: "{{ mylist2 | map(attribute='name') | list }}"
+  loop: "{{ mylist2 | map(attribute='name') | list | difference(['bridge','none','host']) }}"
   ##when: dockerContainerList[0] and item.enabled and item.networks is defined
-  #vars: 
-  ##mylist: "{{ dockerContainerList |  items2dict(key_name='name', value_name='networks') }}"
-    #mylist2: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
-  ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
-  #tags: my_debug
+  vars: 
+    ##mylist: "{{ dockerContainerList |  items2dict(key_name='name', value_name='networks') }}"
+    mylist2: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
+  tags: my_debug
 
 - name: Docker network deployment -------------------------
   docker_network:
      name: "{{ item }}"
-  loop: "{{ myHashNetList | map(attribute='name') | list }}"
+  loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none','host']) }}"
   vars: 
     myHashNetList: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
   when: dockerContainerList[0] 

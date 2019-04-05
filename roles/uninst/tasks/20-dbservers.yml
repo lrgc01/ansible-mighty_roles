@@ -1,0 +1,12 @@
+- name: Drop all databases ------------------------------
+  mysql_db:
+    login_user: "{{ item.admuser }}"
+    login_password: "{{ item.admpass }}"
+    login_host: "{{ item.host }}"
+    name: "{{ item.dbname }}"
+    state: absent
+  loop: "{{ db_list }}"
+  when: db_list is defined and item.drop
+  register: databases_dropped
+  tags: drop_databases
+
