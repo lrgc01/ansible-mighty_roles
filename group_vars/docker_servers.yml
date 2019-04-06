@@ -153,7 +153,7 @@ dep_pkg_list		:
 # "users"'s role block
 #
 # Authorized_keys to fullfill in the server
-auth_keys_file_list     :
+#auth_keys_file_list     :
 #   - { username : "azureuser"      , pub_key_file : "conf.d/testkey" }
 
 #--- End of user stuff role block
@@ -256,7 +256,7 @@ ssl_up_down_files_list 	:
 #
 # List of containers to be created.
 # Except for 'name' and 'networks', all others may be omitted:
-#    networks (for now networks must be defined - or use bridge)
+#    networks (for now networks must be defined - or use 'bridge')
 #    links
 #    volumes
 #    volumes_from
@@ -265,6 +265,7 @@ ssl_up_down_files_list 	:
 #    published_ports
 #    state
 #    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
 #
 # All plural variable names are LISTs, but 'networks'
 # must be a list of dict.
@@ -283,6 +284,7 @@ dockerContainerList :
         enabled         : true ,
         name            : "jenkins" ,
         image           : "lrgc01/jenkins" ,
+        pull            : true ,
         networks        : [ { name : "jenkins_net" } ] ,
         volumes         : [ "jenkins:/var/lib/jenkins" , "/home:/home", ] ,
         volumes_from    : [ "maven" ] ,
@@ -295,6 +297,7 @@ dockerContainerList :
         enabled         : true ,
         name            : "python" ,
         image           : "lrgc01/pytest_pyinstaller" ,
+        pull            : true ,
         networks        : [ { name : "jenkins_net" } ] ,
         volumes         : [ "/home:/home", ] ,
         volumes_from    : [ "jenkins" ] ,
@@ -304,10 +307,32 @@ dockerContainerList :
         enabled         : true ,
         name            : "nodejs" ,
         image           : "lrgc01/nodejs" ,
+        pull            : true ,
         networks        : [ { name : "jenkins_net" } ] ,
         volumes         : [ "/home:/home", ] ,
         volumes_from    : [ "jenkins" ] ,
         published_ports : [ "0.0.0.0:3030:3000" ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "php" ,
+        image           : "lrgc01/php-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "nginx_net" } ] ,
+        volumes         : [ "php_etc:/etc/php", "php_run:/run/php", ] ,
+        published_ports : [ "0.0.0.0:9000:9000", ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "nginx" ,
+        image           : "lrgc01/nginx-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "nginx_net" } ] ,
+        volumes         : [ "nginx_etc:/etc/nginx", "nginx_html:/var/www", "nginx_log:/var/log/nginx", ] ,
+        volumes_from    : [ "php" ] ,
+        published_ports : [ "0.0.0.0:8000:80", "0.0.0.0:4433:443", ] , 
         state           : "started" ,
     }
 #

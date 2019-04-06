@@ -6,7 +6,7 @@
 #
 # List of containers to be created.
 # Except for 'name' and 'networks', all others may be omitted:
-#    networks (for now networks must be defined - or use bridge)
+#    networks (for now networks must be defined - or use 'bridge')
 #    links
 #    volumes
 #    volumes_from
@@ -15,6 +15,7 @@
 #    published_ports
 #    state
 #    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
 #
 # All plural variable names are LISTs, but 'networks'
 # must be a list of dict.

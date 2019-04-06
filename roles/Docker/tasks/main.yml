@@ -26,6 +26,7 @@
   docker_container:
      name: "{{ item.name }}"
      image: "{{ item.image }}"
+     pull: "{{ item.pull | default(omit) }}"
      networks: "{{ item.networks | default(omit) }}"
      links: "{{ item.links | default(omit) }}"
      volumes: "{{ item.volumes | default(omit) }}"
