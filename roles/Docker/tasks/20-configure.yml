@@ -1,0 +1,48 @@
+---
+- name: Ensure directories dir_file_tmpl_list.types=dir ---
+  file:
+    path: "{{ item.dest }}"
+    state: "directory"
+  loop: "{{ docker_dir_file_tmpl_list }}"
+  when: docker_dir_file_tmpl_list is defined and "dir" in item.types
+  register: docker_dirs_in_place
+  tags: docker_container_config
+
+- name: Remove files dir_file_tmpl_list.types=absent ------
+  file:
+    path: "{{ item.dest }}"
+    state: "absent"
+  loop: "{{ docker_dir_file_tmpl_list }}"
+  when: docker_dir_file_tmpl_list is defined and "absent" in item.types
+  register: docker_removed_files
+  tags: docker_container_config
+
+- name: Deploy templates dir_file_tmpl_list.types=tmpl ----
+  template:
+    src: "{{ item.tmpl }}"
+    dest: "{{ item.dest }}/{{ item.name }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ docker_dir_file_tmpl_list }}"
+  when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success and "tmpl" in item.types
+  register: docker_tmpls_in_place
+  tags: docker_container_config
+
+- name: Make proper links dir_file_tmpl_list.types=link ---
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: "link"
+    force: "{{ item.force | default('no') }}"
+  loop: "{{ docker_dir_file_tmpl_list }}"
+  when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success and docker_tmpls_in_place is success and "link" in item.types
+  register: docker_links_in_place
+  tags: docker_container_config
+
+- name: Upload some files from a list when action=upload --
+  copy:
+    dest: "{{ item.remote }}"
+    src: "{{ item.local }}"
+  loop: "{{ docker_up_down_files_list }}"
+  when: docker_up_down_files_list is defined and "upload" in item.action
+  register: docker_cfg_files_uploaded
+  tags: docker_container_config

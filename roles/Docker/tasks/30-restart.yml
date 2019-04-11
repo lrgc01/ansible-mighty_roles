@@ -1,0 +1,9 @@
+---
+- name: Docker restart after tmpl/file/link changes -------
+  docker_container:
+     name: "{{ item.item.docker }}"
+     state: "started"
+     restart: true
+  loop: "{{ docker_tmpls_in_place.results }} + {{ docker_cfg_files_uploaded.results }}"
+  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed) and item is changed and item.item.docker is defined
+  tags: docker, docker_container_config

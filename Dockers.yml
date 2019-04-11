@@ -6,9 +6,9 @@
   roles:
    - common
    - base
+   - users
    - Docker
-#   - phpcfg
-#   - users
-#   - gitcfg
+   - gitcfg
+   - phpcfg
 #   - SSLcrt
-#   - finals
+   - finals

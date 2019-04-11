@@ -1,3 +1,8 @@
+Host *.us-east-2.compute.amazonaws.com
+IdentityFile ~/.ssh/Ohio-linux-key.pem
+User ubuntu
+
 Host *.eastus.cloudapp.azure.com
-IdentityFile ~/.ssh/id_rsa
+#IdentityFile ~/.ssh/id_rsa
+IdentityFile ~/.ssh/azure_id
 User azureuser

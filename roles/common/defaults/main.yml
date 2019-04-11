@@ -17,5 +17,5 @@ base_dep_pkg_list:
 
 apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
 
-listAptRepos :
-   - false
+#listAptRepos :
+#   - false

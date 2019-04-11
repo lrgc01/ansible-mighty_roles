@@ -1,0 +1,43 @@
+---
+#- name: my debug
+#  debug:
+#     msg: "{{ item }}"
+#  ##loop: "{{ query('dict',dockerContainerList) }}"
+#  loop: "{{ mylist2 | map(attribute='name') | list | difference(['bridge','none','host']) }}"
+#  ##when: dockerContainerList[0] and item.enabled and item.networks is defined
+#  vars: 
+#    ##mylist: "{{ dockerContainerList |  items2dict(key_name='name', value_name='networks') }}"
+#    mylist2: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+#    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
+#  tags: my_debug
+
+- name: Docker network deployment -------------------------
+  docker_network:
+     name: "{{ item }}"
+  loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none','host']) }}"
+  vars: 
+    myHashNetList: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+  when: dockerContainerList[0] 
+  register: docker_networks_created
+  tags: docker, docker_networks
+
+          
+- name: Docker container deployment -----------------------
+  docker_container:
+     name: "{{ item.name }}"
+     image: "{{ item.image }}"
+     pull: "{{ item.pull | default(omit) }}"
+     networks: "{{ item.networks | default(omit) }}"
+     links: "{{ item.links | default(omit) }}"
+     volumes: "{{ item.volumes | default(omit) }}"
+     volumes_from: "{{ item.volumes_from | default(omit) }}"
+     working_dir: "{{ item.working_dir | default(omit) }}"
+     user: "{{ item.user | default(omit) }}"
+     published_ports: "{{ item.published_ports | default(omit) }}"
+     purge_networks: "{{ item.purge_networks | default(omit) }}"
+     state: "{{ item.state | default('started') }}"
+  loop: "{{ dockerContainerList }}"
+  when: dockerContainerList[0] and item.enabled and docker_networks_created is success
+  register: container_created
+  tags: docker, docker_container
+

@@ -53,5 +53,5 @@
     state: "restarted"    
     enabled: true
   loop: "{{ later_templates_in_place.results }} + {{ later_lineinfile_done.results }}"
-  when: (templates_in_place is changed or later_lineinfile_done is changed) and item is changed and item.item.srv is defined
+  when: (later_templates_in_place is changed or later_lineinfile_done is changed) and item is changed and item.item.srv is defined
   tags: final_config

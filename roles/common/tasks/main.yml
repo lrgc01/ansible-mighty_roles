@@ -14,7 +14,7 @@
     pkg: "{{ item }}"
     state: "present"
   loop: "{{ apt_key_req_packs }}"
-  when: listAptRepos[0] 
+  when: listAptRepos is defined
   register: req_to_apt_key_installed
   tags: update_repository, apt_keys
 
@@ -23,7 +23,7 @@
     url: "{{ item.keyUrl }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: listAptRepos[0] and item.state and item.keyUrl and req_to_apt_key_installed is success
+  when: listAptRepos is defined and item.state and item.keyUrl and req_to_apt_key_installed is success
   register: apt_keys_done
   tags: update_repository, apt_keys
 
@@ -32,7 +32,7 @@
     repo: "{{ item.repoStr }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: listAptRepos[0] and item.state and item.repoStr
+  when: listAptRepos is defined and item.state and item.repoStr
   register: apt_repos_done
   tags: update_repository
 

@@ -3,6 +3,19 @@
 #
 # Docker role block
 #
+# Official repository to install docker in Debian
+# Should be adapted to many systems in a near future
+listAptRepos :
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/debian/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable" ,
+       keyId   : "0EBFCD88" ,
+    }
+
+# Some very early pip python packs
+pip_install_list        : [ "docker" ]
+
 #
 # List of containers to be created.
 # Except for 'name' and 'networks', all others may be omitted:
