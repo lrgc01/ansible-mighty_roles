@@ -4,7 +4,7 @@
 # Python role block variable definition
 #
 # boto* is for AWS so use in localhost only
-pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+#pip_install_list        : [ "botocore" , "boto" , "boto3" ]
 #pip_install_list        : [ false ]
 
 #--- End of python role block
@@ -28,6 +28,13 @@ web_proxy               : "haproxy"
 web_service_other       : "{{ web_proxy }}"
 be_srv_1                : "10.0.0.5"
 be_srv_2                : "10.0.0.6"
+backend_servers_string_lines : 
+   [ 
+      "server  srv1 10.0.0.5:80 check" ,
+      "server  srv2 10.0.0.6:80 check" ,
+      "server  srv3 10.0.0.5:8000 check" ,
+      "server  srv4 10.0.0.6:8000 check" , 
+   ]
 
 #
 # Will be used mainly with SSL certificate role
@@ -193,5 +200,16 @@ ssl_up_down_files_list 	:
          srv    : "{{ web_proxy }}"
       }
 
+#later_lineinfile_config_list :
+#   - {
+#       enabled : true ,
+#       path   : "{{ civicrm_settings_file }}" ,
+#       owner  : "root" ,
+#       group  : "root" ,
+#       mode   : "0644" ,
+#       regexp : ".*\\$civicrm_setting\\['Directory Preferences'\\]\\['extensionsDir'\\] =.*" ,
+#       line   : "$civicrm_setting['Directory Preferences']['extensionsDir'] = \'{{ civicrm_extensions_dir }}\';"
+#     }
+#
 #--- End of SSLCrt role block
 

@@ -4,7 +4,7 @@
 # Python role block variable definition
 #
 # boto* is for AWS so use in localhost only
-pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+#pip_install_list        : [ "botocore" , "boto" , "boto3" ]
 #pip_install_list        : [ false ]
 
 #--- End of python role block
