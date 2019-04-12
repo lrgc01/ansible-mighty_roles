@@ -60,7 +60,7 @@
   when: pip_install_list is defined and pip_installed is success
   tags: bootstrap_python
 
-- name: Install vary basic packages to run ansible --------
+- name: Install very basic packages to run ansible --------
   apt:
     pkg: "{{ item.pkg }}"
     state: "present"

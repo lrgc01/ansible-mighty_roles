@@ -5,7 +5,7 @@
     repo: "{{ item.repoStr }}"
     state: absent
   loop: "{{ listAptRepos }}"
-  when: listAptRepos[0] and item.state and item.repoStr
+  when: listAptRepos is defined and item.state and item.repoStr
   register: rem_apt_repos_done
   tags: remove_repository
 
@@ -16,6 +16,6 @@
     state: absent
     id: "{{ item.keyId }}"
   loop: "{{ listAptRepos }}"
-  when: listAptRepos[0] and item.state and item.keyUrl and rem_apt_repos_done is success
+  when: listAptRepos is defined and item.state and item.keyUrl and rem_apt_repos_done is success
   register: rem_apt_keys_done
   tags: remove_repository, remove_apt_keys

@@ -29,3 +29,12 @@
   register: docker_networks_removed
   tags: docker, docker_networks
 
+- name: Docker - remove each volume -----------------------
+  docker_network:
+     name: "{{ item }}"
+     state: absent
+  loop: "{{ dockerContainerList | map(attribute='volumes') | list | flatten | unique }}"
+  when: dockerContainerList[0] and container_removed is success
+  register: docker_volumes_removed
+  tags: docker, docker_volumes
+

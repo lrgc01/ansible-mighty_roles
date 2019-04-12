@@ -5,7 +5,7 @@
 #
 # Preliminary common configs
 #
-#listAptRepos :
+#listAptRepos : # It cames inside roles/Docker/default/main.yml 
 #  - {
 #       state   : "present" ,
 #       keyUrl  : "https://download.docker.com/linux/debian/gpg" ,
@@ -13,7 +13,7 @@
 #       keyId   : "0EBFCD88" ,
 #    }
 
-# Some very early pip python packs
+# Some very early pip python packs (It's inside roles/Docker/default/main.yml)
 #pip_install_list        : [ "docker" ]
 
 #--- End of common role block
@@ -29,15 +29,16 @@ www_basedir             : "/var/www"
 www_username            : "www-data"
 web_service             : "nginx"
 
-# Docker definitions
+# Some Docker definitions
 dockername_php          : "php"
 dockername_nginx        : "nginx"
-# Inside docker 
+# And inside Docker system
 nginx_etc		: "/var/lib/docker/volumes/nginx_etc/_data"  	# Equivalent to /etc/nginx
-nginx_html		: "/var/lib/docker/volumes/nginx_html/_data" 	# Equivalent to /var/www
+nginx_html		: "/var/lib/docker/volumes/nginx_html/_data" 	# Equivalent to /var/www/html
 php_etc			: "/var/lib/docker/volumes/php_etc/_data"	# Equivalent to /etc/php
 www_htmldir             : "{{ nginx_html }}"			        # Equivalent to /var/www/html
 
+# For git to download/pull/clone the PHP small site example
 #
 domain1_rootdir         : "{{ www_htmldir }}/Orm_site"
 domain1_docker_rootdir  : "/var/www/html/Orm_site"
@@ -126,15 +127,15 @@ dep_pkg_list		:
 #
 # gitcfg role
 #
-gitCloneList	:
-   - {
-	repo : "{{ github_source_repo }}" ,
-        dest : "{{ domain1_rootdir }}" ,
-        gitDir : "{{ git_separate_dir }}" ,
-        update_y_n : false ,
-        clone_y_n : true,
-        branch : "{{ git_branch }}" ,
-     }
+#gitCloneList	:
+#   - {
+#	repo : "{{ github_source_repo }}" ,
+#        dest : "{{ domain1_rootdir }}" ,
+#        gitDir : "{{ git_separate_dir }}" ,
+#        update_y_n : false ,
+#        clone_y_n : true,
+#        branch : "{{ git_branch }}" ,
+#     }
         
 ###########################################
 #
@@ -284,7 +285,7 @@ dockerContainerList :
         image           : "lrgc01/php-stretch_slim" ,
         pull            : true ,
         networks        : [ { name : "nginx_net" } ] ,
-        volumes         : [ "php_etc:/etc/php", "php_run:/run/php", "nginx_html:/var/www/html" , ] ,
+        volumes         : [ "php_etc:/etc/php", "php_run:/run/php", "/var/www/html:/var/www/html" , ] ,
         published_ports : [ "0.0.0.0:9000:9000", ] , 
         state           : "started" ,
     }

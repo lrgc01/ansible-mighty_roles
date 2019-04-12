@@ -31,6 +31,6 @@
     clone: "{{ item.clone_y_n | default(omit) }}"
     version: "{{ item.branch | default(omit) }}"
   loop: "{{ gitCloneList }}"
-  when: gitCloneList[0]
+  when: gitCloneList is defined
   register: git_repo_cloned
   tags: git_config, git_clone
