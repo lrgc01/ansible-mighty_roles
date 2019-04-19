@@ -26,14 +26,15 @@ web_service             : "nginx"
 # haproxy
 web_proxy               : "haproxy"
 web_service_other       : "{{ web_proxy }}"
-be_srv_1                : "10.0.0.5"
-be_srv_2                : "10.0.0.6"
+#be_srv_1                : "10.0.0.5"
+#be_srv_2                : "10.0.0.6"
 backend_servers_string_lines : 
    [ 
       "server  srv1 10.0.0.5:80 check" ,
       "server  srv2 10.0.0.6:80 check" ,
       "server  srv3 10.0.0.5:8000 check" ,
       "server  srv4 10.0.0.6:8000 check" , 
+      "server  srv5 10.0.0.4:8800 check" , 
    ]
 
 #
