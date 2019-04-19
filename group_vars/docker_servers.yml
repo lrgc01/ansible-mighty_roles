@@ -32,6 +32,7 @@ web_service             : "nginx"
 # Some Docker definitions
 dockername_php          : "php"
 dockername_nginx        : "nginx"
+dockername_nginx2       : "nginx2"
 # And inside Docker system
 nginx_etc		: "/var/lib/docker/volumes/nginx_etc/_data"  	# Equivalent to /etc/nginx
 nginx_html		: "/var/www/html" 	                        # Equivalent to /var/www/html
@@ -298,6 +299,17 @@ dockerContainerList :
         volumes         : [ "nginx_etc:/etc/nginx", "nginx_log:/var/log/nginx", ] ,
         volumes_from    : [ "php" ] ,
         published_ports : [ "0.0.0.0:8800:80", "0.0.0.0:4433:443", ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_nginx2 }}" ,
+        image           : "lrgc01/nginx-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "nginx_net" } ] ,
+        #volumes         : [ "nginx_etc:/etc/nginx", "nginx_log:/var/log/nginx", ] ,
+        volumes_from    : [ "php" , "{{ dockername_nginx }}" ] ,
+        published_ports : [ "0.0.0.0:8880:80", "0.0.0.0:4443:443", ] , 
         state           : "started" ,
     }
 
