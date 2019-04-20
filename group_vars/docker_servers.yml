@@ -5,13 +5,14 @@
 #
 # Preliminary common configs
 #
-listAptRepos : # It cames inside roles/Docker/default/main.yml 
-  - {
-       state   : "present" ,
-       keyUrl  : "https://download.docker.com/linux/ubuntu/gpg" ,
-       repoStr : "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" ,
-       keyId   : "0EBFCD88" ,
-    }
+#my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+#listAptRepos : # It cames inside roles/Docker/default/main.yml 
+#  - {
+#       state   : "present" ,
+#       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+#       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+#       keyId   : "0EBFCD88" ,
+#    }
 
 # Some very early pip python packs (It's inside roles/Docker/default/main.yml)
 #pip_install_list        : [ "docker" ]

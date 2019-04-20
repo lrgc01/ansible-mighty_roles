@@ -33,6 +33,7 @@
     dest: "{{ item.dest }}"
     state: "link"
     force: "{{ item.force | default('no') }}"
+    follow: "{{ item.follow | default('no') }}"
   loop: "{{ docker_dir_file_tmpl_list }}"
   when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success and docker_tmpls_in_place is success and "link" in item.types
   register: docker_links_in_place

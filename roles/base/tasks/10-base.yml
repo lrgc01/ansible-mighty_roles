@@ -42,6 +42,7 @@
     dest: "{{ item.dest }}"
     state: link
     force: "{{ item.force | default('no') }}"
+    follow: "{{ item.follow | default('no') }}"
   loop: "{{ dir_file_tmpl_list }}"
   when: dir_file_tmpl_list[0] and removed_files is success and templates_in_place is success and "link" in item.types
   register: links_in_place

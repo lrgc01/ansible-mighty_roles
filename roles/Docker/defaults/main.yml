@@ -4,12 +4,13 @@
 # Docker role block
 #
 # Official repository to install docker in Debian
-# Should be adapted to many systems in a near future
-listAptRepos :
-  - {
+# Should be adapted to many other systems in the future
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : 
+  - {  
        state   : "present" ,
-       keyUrl  : "https://download.docker.com/linux/debian/gpg" ,
-       repoStr : "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
        keyId   : "0EBFCD88" ,
     }
 
@@ -44,7 +45,5 @@ pip_install_list        : [ "docker" ]
 #        state           : "present" ,
 #    }
 
-dockerContainerList : 
-   - false
 #
 #--- End of Docker role block

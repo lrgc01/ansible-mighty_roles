@@ -17,7 +17,7 @@
   loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none','host']) }}"
   vars: 
     myHashNetList: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
-  when: dockerContainerList[0] 
+  when: dockerContainerList is defined
   register: docker_networks_created
   tags: docker, docker_networks
 
@@ -37,7 +37,7 @@
      purge_networks: "{{ item.purge_networks | default(omit) }}"
      state: "{{ item.state | default('started') }}"
   loop: "{{ dockerContainerList }}"
-  when: dockerContainerList[0] and item.enabled and docker_networks_created is success
+  when: dockerContainerList is defined and item.enabled and docker_networks_created is success
   register: container_created
   tags: docker, docker_container
 
