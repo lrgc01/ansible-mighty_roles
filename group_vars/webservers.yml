@@ -1,0 +1,679 @@
+---
+#
+# Python role block variable definition
+#
+# boto* is for AWS so use in localhost only
+#pip_install_list        : [ "botocore" , "boto" , "boto3" ]
+
+#--- End of python role block
+
+#
+# General var definition block - to all roles
+#
+# Our web server definitions
+#
+www_basedir             : "/var/www"
+www_htmldir             : "{{ www_basedir }}/html"
+www_username            : "www-data"
+web_service             : "nginx"                                       # will be used more than once later
+
+#
+# Specific for Drupal / civicrm = domain1
+#
+drupal_version          : "drupal-8.6.7"
+drupal_basename         : "Drupal-site"
+drupal_site_rootdir     : "{{ www_basedir }}/{{ drupal_version }}"
+
+domain1_rootdir         : "{{ drupal_site_rootdir }}"
+domain3_rootdir         : "{{ drupal_site_rootdir }}"
+#
+
+# Dolibarr = dogshearing = domain2
+dolibarr_base 		: "dolibarr-base"
+dolibarr_privdir        : "{{ www_basedir }}/private/dolibarr/documents"
+dolibarr_rootdir	: "{{ www_basedir }}/{{ dolibarr_base }}/htdocs"
+
+domain2_rootdir         : "{{ dolibarr_rootdir }}"
+
+#
+# Will be used mainly with SSL certificate role
+#
+key_base_path           : "/etc/ssl/private"
+cert_base_path          : "/etc/ssl/certs"
+domain1                 : "lrc.sytes.net"
+domain2                 : "dogshearing.uk.to"
+domain3                 : "lrgc01.uk.to"
+#cert_name_prefix        : "stg-letsencrypt"
+cert_name_prefix        : "pro-{{ domain1 }}"
+cert_name_prefix2       : "pro-{{ domain2 }}"
+cert_name_prefix3       : "pro-{{ domain3 }}"
+production_account_key  : "pro2-letsencrypt-account-key.key"
+staging_account_key     : "stg-letsencrypt-account-key.key"
+#
+# User administration (linux users)
+#
+drupaladm_user          : "drupaladm"
+siteadm_user            : "siteadm"
+git_user                : "git"
+# For git
+#
+#git_repodir    : false
+git_repodir             : "/repos"
+
+# DB AWS instance used widely
+db_instance_hostname : "websiteinstance.ctxnidj2utoz.us-east-2.rds.amazonaws.com"
+
+# These below are used with remote ansible python script and once installed it's better not remove them
+base_dep_pkg_list:
+   - { pkg : "python-mysqldb"  }
+   - { pkg : "python-openssl"  }
+
+#--- End of General vars block
+
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list		:
+   - { pkg : "{{ web_service }}" ,  srv : "{{ web_service }}" , state : "started" , enabled : true }
+   - { pkg : "php"               ,  srv : "php7.0-fpm"        , state : "started" , enabled : true }
+     #   - { pkg : "mariadb-server"    ,  srv : "mysql"             , state : "started" , enabled : true }
+   - { pkg : "php-mysql"       }
+   - { pkg : "php-gd"          }
+   - { pkg : "php-json"        }
+   - { pkg : "php-curl"        }
+   - { pkg : "php-mbstring"    }
+   - { pkg : "php-xml"         }
+   - { pkg : "php-mcrypt"      }
+   - { pkg : "git"	       }
+# These below are used with remote ansible python script and once installed it's better not remove them
+#   - { pkg : "python-mysqldb"  }
+#   - { pkg : "python-openssl"  }
+
+#
+# dir, file, template or link, depending on key values
+#
+# Will be used in template and file modules to create, delete and link.
+#
+# This dir_file_tmpl_list dict var will be used in 4 different tasks, one of 
+# each type: tmpl, dir, link and file.
+#
+# If mode not present, it will default to 0644
+# Note that one line may be used to multiple goals as defined in types.
+# "dir" uses dest only
+# "link" uses src and dest: ln -s src dest (force=yes => ln -s -f)
+# "tmpl" uses name and dest: name.j2 -> dest/name
+# "absent" uses dest to remove files
+# srv is used to restart the service, if applicable, after a template is changed.
+dir_file_tmpl_list     :
+   - { types : [ "absent" ]       , dest : "/etc/nginx/sites-enabled/default" }
+   - { types : [ "tmpl" ]         , dest : "~ubuntu"                    , name : "updatedns.sh"             , tmpl: "updatedns.sh.j2" , mode : "0755" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , name : "{{ domain2 }}-cert.conf"  , tmpl: "{{ domain2 }}-cert.conf.j2" , srv : "{{ web_service }}" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , name : "{{ domain3 }}-cert.conf"  , tmpl: "{{ domain3 }}-cert.conf.j2" , srv : "{{ web_service }}" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , name : "{{ domain2 }}.conf"       , tmpl: "{{ domain2 }}.conf.j2"      , srv : "{{ web_service }}" }
+   - { types : [ "tmpl" ]         , dest : "/etc/nginx/sites-available" , name : "{{ domain3 }}.conf"       , tmpl: "{{ domain3 }}.conf.j2"      , srv : "{{ web_service }}" }
+   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain2 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain2 }}.conf" }
+   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ domain3 }}.conf" , dest : "/etc/nginx/sites-enabled/{{ domain3 }}.conf" }
+   - { types : [ "link" ]         , src  : "{{ www_basedir }}/{{ drupal_version }}"        , dest : "{{ www_htmldir }}/{{ drupal_basename }}" , force : "yes" }
+
+#   - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/{{ drupal_basename }}" , dest : "/etc/nginx/sites-enabled/{{ drupal_basename }}" }
+#   - { types : [ "tmpl" ]         , dest : "/etc/nginx/snippets"        , name : "drupalcert.conf" , srv : "{{ web_service }}" }
+
+#   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , name : "{{ drupal_basename }}" }
+#   - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/snippets"        , name : "drupalcert.conf" }
+#   - { types : [ "dir" , "link" ] , src  : "/etc/nginx/sites-available" , dest : "/etc/nginx/sites-enabled" , name : "{{ drupal_basename }}" }
+
+#
+# INI file configuration (php and others)
+#
+ini_file_list           :
+   - { path : "/etc/php/7.0/fpm/php.ini" , section : "PHP" , option : "allow_url_fopen" , value : "Off" }
+   - { path : "/etc/php/7.0/fpm/php.ini" , section : "PHP" , option : "memory_limit"    , value : "128M" }
+#
+# Cron
+#
+cron_list	:
+   - { name: "Update domain" , minute: "*/5" , job: "~ubuntu/updatedns.sh"  , user: "ubuntu" , state: "present" }
+
+# Define local and remote files both for upload (copy)
+# and download (fetch).
+# Action is mandatory (same idea of types in dir_file_tmpl_list above).
+# action = list of upload or download or both
+# DON'T forget local files to upload to the server and local dirs when downloading
+#up_down_files_list :
+#   -  { 
+#        local  : "{{ confdir }}/lrc.sytes.net.key",
+#        remote : "/etc/ssl/private/lrc.sytes.net.key" ,
+#        action : [ "upload" ]
+#      }
+#   -  { 
+#        local  : "{{ confdir }}/lrc.sytes.net.crt",
+#        remote : "/etc/ssl/certs/lrc.sytes.net.crt" ,
+#        action : [ "upload" ]
+#      }
+
+# List of tar/zip balls to unarchive to specific places.
+# Must define what it creates to be idempotent.
+unarchive_list  :
+   - {
+        enabled     : true ,
+        src         : "https://www.drupal.org/download-latest/tar.gz" ,
+        dest        : "{{ www_basedir }}" ,
+        creates     : "{{ www_basedir }}/{{ drupal_version }}/index.php" ,
+        owner       : "root" ,
+        group       : "root" ,
+        remote_src  : true ,
+     }
+#   - {
+#        src         : "https://releases.wikimedia.org/mediawiki/1.32/mediawiki-1.32.0.tar.gz" ,
+#        dest        : "{{ www_htmldir }}" ,
+#        creates     : "{{ www_htmldir }}/{{ mediawiki_ver }}/index.php" ,
+#        owner       : "root" ,
+#        group       : "root" ,
+#        remote_src  : true
+#     }
+
+#--- End of base role block
+
+#
+# Users role block variable definition
+#
+# users to be created.
+# A later task will retrieve these keys asked to be created in here:
+users_list              :
+   - { username : "{{ drupaladm_user }}" , comment : "Drupal admin user" , groups : "www-data" , sshkey: false }
+   - { username : "{{ siteadm_user }}"   , comment : "Site admin user"   , groups : "www-data" , sshkey: false }
+   - { username : "{{ git_user }}"       , comment : "Git user"          , groups : ""         , sshkey: true  }
+# Authorized_keys to fullfill in the server
+auth_keys_file_list	:
+   - { username : "{{ git_user }}"	, pub_key_file : "conf.d/luiz_pub_key"		}
+   - { username : "{{ git_user }}"	, pub_key_file : "conf.d/luiz_newage1_pub_key"	}
+
+#--- End of Users role block
+
+#
+# Gitcfg role block variable definition
+#
+project_list            :
+   - "drupal.git"
+   - "test.git"
+
+#--- End of Gitcfg role block
+
+#
+# Phpcfg role block variable definition
+#
+# PHP composer
+#
+#
+require_drush        : "drush/drush:9"
+require_google_auth  : "drupal/social_auth_google:^2.0"
+#
+# Will always install composer packages inside root dir when global=true
+# In other words, working_dir only works if global=false
+composer_list           :
+   - { command : "require"        , global : false  , arguments : "--no-progress {{ require_google_auth }}" , working_dir : "{{ drupal_site_rootdir }}" }
+   - { command : "require"        , global : true  , arguments : "--no-progress {{ require_drush }}" }
+   - { command : "create-project" , global : false , arguments : "--no-progress dolibarr/dolibarr {{ dolibarr_base }}" , working_dir : "{{ www_basedir }}" , creates : "{{ www_basedir }}/{{ dolibarr_base }}" }
+#   - { command : "remove"         , global : "true"  , arguments : "--no-progress {{ composer_remove }}" }
+
+#--- End of Phpcfg role block
+
+#
+# SSLcrt role block variable definition
+#
+# SSL certificate and private key
+#
+# Production directory in Let's Encrypt: "https://acme-v02.api.letsencrypt.org/directory",
+# Staging directory in Let's Encrypt: "https://acme-staging-v02.api.letsencrypt.org/directory",
+#
+# Due to map filter inside the loop, cert_hash_list first element cannot be false like other lists
+# So we define another parameter to allow the system to run safely (cert_hash_list[*].enabled)
+cert_hash_list		:
+   -  {
+        enabled			: false ,
+        selfsigned              : false ,
+        pem_file                : "{{ cert_base_path }}/{{ domain1 }}.pem",
+        account_priv_key_path	: "{{ key_base_path }}/{{ production_account_key }}",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-fullchain.crt",
+        crt_interchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-intermmediate.crt",
+        acme_directory		: "https://acme-v02.api.letsencrypt.org/directory",
+        C			: "BR",
+        ST			: "Brazil",
+        L			: "Curitiba",
+        O			: "Lrc private site",
+        OU			: "Lrc private site",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "{{ domain1 }}",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/{{ domain1 }}.key",
+        server_cert_path	: "{{ cert_base_path }}/{{ domain1 }}.crt",
+        local_certkey_path	: "{{ confdir }}/{{ domain1 }}.key",
+        local_cert_path		: "{{ confdir }}/{{ domain1 }}.crt",
+        web_rootdir		: "{{ domain1_rootdir }}"
+      }
+   -  {
+        enabled			: true ,
+        selfsigned              : false ,
+        pem_file                : "{{ cert_base_path }}/{{ domain2 }}.pem",
+        account_priv_key_path	: "{{ key_base_path }}/{{ production_account_key }}",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix2 }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix2 }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix2 }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix2 }}-fullchain.crt",
+        crt_interchain_path 	: "{{ cert_base_path }}/{{ cert_name_prefix2 }}-intermmediate.crt",
+        acme_directory		: "https://acme-v02.api.letsencrypt.org/directory",
+        C			: "BR",
+        ST			: "Rio de Janeiro",
+        L			: "Teresopolis",
+        O			: "DogShearin Pet",
+        OU			: "DogShearin Pet",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "{{ domain2 }}",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/{{ domain2 }}.key",
+        server_cert_path	: "{{ cert_base_path }}/{{ domain2 }}.crt",
+        local_certkey_path	: "{{ confdir }}/{{ domain2 }}.key",
+        local_cert_path		: "{{ confdir }}/{{ domain2 }}.crt",
+        web_rootdir		: "{{ domain2_rootdir }}"
+    }
+   -  {
+        enabled			: true ,
+        selfsigned              : false ,
+        pem_file                : "{{ cert_base_path }}/{{ domain3 }}.pem",
+        account_priv_key_path	: "{{ key_base_path }}/{{ production_account_key }}",
+        csr_priv_key_path	: "{{ key_base_path }}/{{ cert_name_prefix3 }}-csr-key.key",
+        csr_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix3 }}.csr",
+        crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix3 }}.crt",
+        crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix3 }}-fullchain.crt",
+        crt_interchain_path 	: "{{ cert_base_path }}/{{ cert_name_prefix3 }}-intermmediate.crt",
+        acme_directory		: "https://acme-v02.api.letsencrypt.org/directory",
+        C			: "BR",
+        ST			: "Brazil",
+        L			: "Curitiba",
+        O			: "Lrc private site",
+        OU			: "Lrc private site",
+        email_address		: "luizrogeriocarvalho@gmail.com",
+        CN			: "{{ domain3 }}",
+        force_cert_y_n		: "no",
+        allow_creation_y_n	: "yes",
+        remaining_days		: "30",
+        server_certkey_path	: "{{ key_base_path }}/{{ domain3 }}.key",
+        server_cert_path	: "{{ cert_base_path }}/{{ domain3 }}.crt",
+        local_certkey_path	: "{{ confdir }}/{{ domain3 }}.key",
+        local_cert_path		: "{{ confdir }}/{{ domain3 }}.crt",
+        web_rootdir		: "{{ domain3_rootdir }}"
+    }
+server_cert_n_key_list	:
+   -  { 
+        src  : "{{ cert_hash_list[0].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[0].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[0].crt_cert_path }}",
+        dest : "{{ cert_hash_list[0].server_cert_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[1].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[1].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[1].crt_cert_path }}",
+        dest : "{{ cert_hash_list[1].server_cert_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[2].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[2].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[2].crt_cert_path }}",
+        dest : "{{ cert_hash_list[2].server_cert_path }}"
+      }
+# srv defines if a service will be restarted upon modification in file upload
+ssl_up_down_files_list 	:
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[1].local_certkey_path }}",
+        remote : "{{ cert_hash_list[1].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[1].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[1].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[2].local_certkey_path }}",
+        remote : "{{ cert_hash_list[2].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[2].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[2].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        srv    : "{{ web_service }}"
+      }
+
+#--- End of SSLCrt role block
+
+#
+# DB_adm role block variable definition
+#
+# Care should be taken here because mysql_user ansible module 
+# does not support grants on FUNCTIONS and PROCEDURES. 
+# The workaround is to let append_privs=true so that 
+# such kind of priviledge added stay around.
+#
+# It seems that aws eds instance has some issue with 
+# mysql_user module, because it always shows no idempotency.
+#
+# 'db_list[*].dbcreate' switches one entry on/off
+# drop is used un role/uninst to remove a database
+db_list              :
+   -  {
+        dbcreate     : true ,
+        drop	     : false ,
+        admuser      : "{{ rds_db_admuser }}" ,
+        admpass      : "{{ rds_dbadm_pass }}" ,
+        host         : "{{ db_instance_hostname }}",
+        user         : "drupal" ,
+        pass         : "{{ db_drupal_pass }}" ,
+        dbname       : "drupal" ,
+        encoding     : "utf8mb4" ,
+        collation    : "utf8mb4_general_ci" ,
+        perms        : "drupal.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES/civicrm.*:SELECT",
+        append_privs : true 
+      }
+   -  {
+        dbcreate     : false ,
+        drop	     : false ,
+        admuser      : "root" ,
+        admpass      : '' ,
+        host         : "localhost",
+        user         : "civicrm" ,
+        pass         : "{{ db_civi_pass }}" ,
+        dbname       : "civicrm" ,
+        encoding     : "utf8mb4" ,
+        collation    : "utf8mb4_general_ci" ,
+        perms        : "civicrm.*:SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,LOCK TABLES,TRIGGER,CREATE ROUTINE,ALTER ROUTINE,REFERENCES",
+        append_privs : true 
+      }
+   -  {
+        dbcreate     : true ,
+        drop	     : false ,
+        admuser      : "{{ rds_db_admuser }}" ,
+        admpass      : "{{ rds_dbadm_pass }}" ,
+        host         : "{{ db_instance_hostname }}",
+        user         : "dolibarr" ,
+        pass         : "{{ db_doli_pass }}" ,
+        dbname       : "dolibarr" ,
+        encoding     : "utf8" ,
+        collation    : "utf8_general_ci" ,
+        perms        : "dolibarr.*:ALL PRIVILEGES",
+        append_privs : true 
+      }
+
+#--- End of DB_adm role block
+
+#
+# Drupal / civicrm specific role block variable definition
+#
+# other composer related - for drupal/civicrm
+drush_path              : "PATH=/bin:/sbin:/usr/bin:/usr/sbin:/root/.composer/vendor/bin"
+civicrm_include_line    : "--include=sites/all/modules/civicrm/drupal/drush"
+drush_base_cmd          : "{{ drush_path }} drush -y {{ civicrm_include_line }}"
+#
+# Drupal specific
+#
+#drush_db_url            : "--db-url=mysql://{{ db_list[0].user }}:{{ db_list[0].pass }}@{{ db_list[0].host }}/{{ db_list[0].dbname }}"
+##drush_account_name      : "--account-name={{ db_list[0].admuser }}"
+##drush_account_pass      : "--account-pass={{ db_list[0].admpass }}"
+#drush_account_name      : ""
+#drush_account_pass      : ""
+#drush_account_mail      : "--account-mail=admin@lrgc01.uk.to"
+#drush_site_name         : "--site-name={{ cert_hash_list[0].CN }}"
+#drush_extra_args        : "--clean-url=0 install_configure_form.site_default_country=GB"
+#drush_si_args           : "standard {{ drush_db_url }} {{ drush_account_name }} {{ drush_account_pass }} {{ drush_account_mail }} {{ drush_site_name }} {{ drush_extra_args }}"
+#
+#
+drupal_db_url 	        : "--db-url=mysql://{{ db_list[0].user }}:{{ db_list[0].pass }}@{{ db_list[0].host }}/{{ db_list[0].dbname }}"
+# site account name and password - adminstrator
+drupal_account_name     : "--account-name=admin"
+drupal_account_pass     : "--account-pass={{ drupal_adm_pass }}"
+drupal_account_mail     : "--account-mail=admin@lrgc01.uk.to"
+drupal_site_name        : "--site-name={{ cert_hash_list[0].CN }}"
+drupal_extra_args       : "--root {{ www_basedir }}/{{ drupal_version }}"
+drupal_si_args          : "standard {{ drupal_db_url }} {{ drupal_account_name }} {{ drupal_account_pass }} {{ drupal_account_mail }} {{ drupal_site_name }} {{ drupal_extra_args }}"
+#
+# Some drupal dir/files vars
+drupal_modules_dir      : "{{ drupal_site_rootdir }}/modules"
+drupal_themes_dir       : "{{ drupal_site_rootdir }}/themes"
+drupal_sites_default    : "{{ drupal_site_rootdir }}/sites/default"
+drupal_all_module_dir   : "{{ drupal_site_rootdir }}/sites/all/modules"
+drupal_all_themes_dir   : "{{ drupal_site_rootdir }}/sites/all/themes"
+drupal_file_system_dir  : "{{ drupal_sites_default }}/files"
+drupal_settings_file    : "{{ drupal_sites_default }}/settings.php"
+drupal_privdir          : "{{ www_basedir }}/private/drupal/files"
+drupal_modules_list     : [ "ctools" , "views" , "views_ui" ]
+#
+# civiCRM specific
+#
+civicrm_download_url    : "https://storage.googleapis.com/civicrm/civicrm-stable/5.9.1/civicrm-5.9.1-drupal.tar.gz"
+civicrm_dbhost          : "--dbhost=\'{{ db_list[1].host }}\'"
+civicrm_dbname          : "--dbname={{ db_list[1].dbname }}"
+civicrm_dbpass          : "--dbpass={{ db_list[1].pass }}"
+civicrm_dbuser          : "--dbuser={{ db_list[1].user }}"
+civicrm_site_url        : "--site_url={{ cert_hash_list[0].CN }}"
+civicrm_cmd_args        : "--ssl=on {{ civicrm_dbhost }} {{ civicrm_dbname }} {{ civicrm_dbpass }} {{ civicrm_dbuser }} {{ civicrm_site_url }}"
+civicrm_settings_file   : "{{ drupal_sites_default }}/civicrm.settings.php"
+civicrm_extensions_dir  : "{{ www_basedir }}/private/civicrm/ext"
+
+#---
+
+#
+# Finals role block variable definition
+#
+# In tmpl the name will be appended to dest and the template itself will have .j2 appended to its name.
+later_dir_file_tmpl_list   :
+   - { enabled : true , types : [ "tmpl" ] , dest : "{{ drupal_site_rootdir }}"  , name : "info.php" }
+   - { enabled : true , types : [ "tmpl" ] , dest : "{{ domain2_rootdir }}/conf"  , name : "conf.php" }
+#   - { enabled : true , types : [ "tmpl" ] , dest : "{{ drupal_sites_default }}" , name : "views.inc" }
+
+later_dirs_config_list       :
+   - { enabled : true , path : "{{ dolibarr_privdir }}"       , owner: "{{ www_username }}"   , mode : "u+w,g-w,o-rwx"       , recurse : true }
+   - { enabled : true , path : "{{ drupal_modules_dir }}"     , owner: "{{ drupaladm_user }}" , group : "{{ www_username }}" , mode : "u+w,g-w,o-rwx" , recurse : true  }
+   - { enabled : true , path : "{{ drupal_themes_dir }}"      , owner: "{{ drupaladm_user }}" , group : "{{ www_username }}" , mode : "u+w,g-w,o-rwx" , recurse : true  }
+   - { enabled : true , path : "{{ drupal_all_module_dir }}"  , owner: "{{ siteadm_user }}"   , group : "{{ www_username }}" , mode : "u+w,g-w,o-rwx" , recurse : false }
+   - { enabled : true , path : "{{ drupal_all_themes_dir }}"  , owner: "{{ siteadm_user }}"   , group : "{{ www_username }}" , mode : "u+w,g-w,o-rwx" , recurse : false }
+   - { enabled : true , path : "{{ drupal_sites_default }}"   , owner: "{{ siteadm_user }}"   , group : "{{ www_username }}" , mode : "u+w,g-w,o-rwx" , recurse : false }
+   - { enabled : true , path : "{{ drupal_file_system_dir }}" , owner: "{{ www_username }}"   , group : "{{ www_username }}" , mode : "u+rwX"         , recurse : true  }
+   - { enabled : true , path : "{{ drupal_privdir }}"         , owner: "{{ siteadm_user }}"   , group : "{{ www_username }}" , mode : "u+w,g+w,o-rwx" , recurse : false }
+   - { enabled : true , path : "{{ civicrm_extensions_dir }}" , owner: "{{ siteadm_user }}"   , group : "{{ www_username }}" , mode : "u+w,g+w,o-rwx" , recurse : false }
+
+
+later_lineinfile_config_list :
+   - {
+       enabled : false ,
+       path   : "{{ civicrm_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*\\$civicrm_setting\\['Directory Preferences'\\]\\['extensionsDir'\\] =.*" ,
+       line   : "$civicrm_setting['Directory Preferences']['extensionsDir'] = \'{{ civicrm_extensions_dir }}\';"
+     }
+   - {
+       enabled : false ,
+       path   : "{{ drupal_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*/sites/default/views.inc.*" ,
+       line   : "require_once '{{ drupal_sites_default }}/views.inc';"
+     }
+   - {
+       enabled : false ,
+       path   : "{{ drupal_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*\\$settings\\['drupal_http_request_fails'\\] =.*" ,
+       line   : "$settings['drupal_http_request_fails'] = FALSE;"
+     }
+   - {
+       enabled : true ,
+       path   : "{{ drupal_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*\\$settings\\['file_private_path'\\] =.*" ,
+       line   : "$settings['file_private_path'] = \'{{ drupal_privdir }}\';"
+     }
+   - {
+       enabled : true ,
+       path   : "{{ drupal_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*\\$settings\\['file_default_scheme'\\] =.*" ,
+       line   : "$settings['file_default_scheme'] = 'private';"
+     }
+   - {
+       enabled : true ,
+       path   : "{{ drupal_settings_file }}" ,
+       owner  : "{{ drupaladm_user }}" ,
+       group  : "{{ www_username }}" ,
+       mode   : "0444" ,
+       regexp : ".*\\$settings\\['trusted_host_patterns'\\] =.*" ,
+       line   : "$settings['trusted_host_patterns'] = ['^lrc\\.sytes\\.net$','^lrgc01\\.uk\\.to$'];"
+     }
+
+#--- Finals role block variable definition
+
+# 
+# Backup and Restore roles block variables definition
+#
+sql_bkp_cmd         : "mysqldump -u {{ rds_db_admuser }} -h {{ db_instance_hostname }} -p{{ rds_dbadm_pass }} --opt "
+sql_rest_cmd        : "mysql -u {{ rds_db_admuser }} -h {{ db_instance_hostname }} -p{{ rds_dbadm_pass }} "
+sql_bkp_cmd2        : "mysqldump -u root --opt "
+#sql_bkp_cmd         : "mysqldump --opt "
+#sql_rest_cmd        : "mysql"
+remote_bkpdir       : "~ubuntu"
+dolibarr_docs_bkp   : "dolibarr_{{ bkptag }}.documents.tgz"
+dolibarr_DB_bkp     : "dolibarr_{{ bkptag }}.sql.gz"
+drupal_DB_bkp       : "drupal_{{ bkptag }}.sql.gz"
+drupal_docs_bkp     : "drupal_{{ bkptag }}.documents.tgz"
+git_bkp_file        : "git_repos_{{ bkptag }}.tgz"
+local_bkp_dir       : "{{ confdir }}/bkprest"
+bkp_rest_files_list :
+   -  { 
+         local   : "{{ local_bkp_dir }}/{{ drupal_DB_bkp }}",
+         remote  : "{{ remote_bkpdir }}/{{ drupal_DB_bkp }}" ,
+         action  : [ "download" ]
+      }
+   -  { 
+         local   : "{{ local_bkp_dir }}/{{ drupal_docs_bkp }}",
+         remote  : "{{ remote_bkpdir }}/{{ drupal_docs_bkp }}" ,
+         action  : [ "download" ]
+      }
+   -  { 
+         local   : "{{ local_bkp_dir }}/{{ dolibarr_DB_bkp }}",
+         remote  : "{{ remote_bkpdir }}/{{ dolibarr_DB_bkp }}" ,
+         action  : [ "download" ]
+      }
+   -  { 
+         local   : "{{ local_bkp_dir }}/{{ dolibarr_docs_bkp }}",
+         remote  : "{{ remote_bkpdir }}/{{ dolibarr_docs_bkp }}" ,
+         action  : [ "download" ]
+      }
+   -  { 
+         local   : "{{ local_bkp_dir }}/{{ git_bkp_file }}",
+         remote  : "{{ remote_bkpdir }}/{{ git_bkp_file }}" ,
+         action  : [ "download" ]
+      }
+shell_bkpcmd_list   :
+   -  {
+         enabled  : true ,
+         shellcmd : "{{ sql_bkp_cmd }} drupal | gzip -c > {{ drupal_DB_bkp }}" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ drupal_DB_bkp }}"
+      }
+   -  {
+         enabled  : true ,
+         shellcmd : "tar -czf {{ drupal_docs_bkp }} {{ drupal_privdir }} {{ www_basedir }}/{{ drupal_version }}" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ drupal_docs_bkp }}"
+      }
+   -  {
+         enabled  : true ,
+         shellcmd : "{{ sql_bkp_cmd }} dolibarr | gzip -c > {{ dolibarr_DB_bkp }}" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ dolibarr_DB_bkp }}"
+      }
+   -  {
+         enabled  : true ,
+         shellcmd : "tar -czf {{ dolibarr_docs_bkp }} {{ dolibarr_privdir }} {{ dolibarr_rootdir }}/conf/conf.php" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ dolibarr_docs_bkp }}"
+      }
+   -  {
+         enabled  : true ,
+         shellcmd : "tar -czf {{ git_bkp_file }} {{ git_repodir }}",
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "{{ git_bkp_file }}"
+      }
+# used for mysql
+shell_restorecmd_list   :
+   -  {
+         enabled  : true ,
+         shellcmd : "gunzip -c {{ drupal_DB_bkp }} | {{ sql_rest_cmd }} drupal ; touch drupal.sql.restored" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "drupal.sql.restored"
+      }
+   -  {
+         enabled  : false ,
+         shellcmd : "gunzip -c {{ dolibarr_DB_bkp }} | {{ sql_rest_cmd }} dolibarr ; touch dolibarr.sql.restored" ,
+         chdir    : "{{ remote_bkpdir }}" ,
+         creates  : "dolibarr.sql.restored"
+      }
+# restore with tar goes here
+unarchive_bkps    :
+   -  {
+         enabled    : false ,
+         src        : "{{ remote_bkpdir }}/{{ dolibarr_docs_bkp }}" ,
+         dest       : "/" ,
+         remote_src : "yes",
+         creates    : "{{ dolibarr_rootdir }}/conf/conf.php"
+      }
+
+#--- End Backup and Restore block
+
+#
+# Uninstall role block - ATTENTION!!! Caution!!!
+#
+base_file_dir_remove_list :
+  - false
+  - "{{ domain1_rootdir }}"

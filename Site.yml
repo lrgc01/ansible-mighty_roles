@@ -1,0 +1,64 @@
+---
+- hosts: webservers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "ubuntu"
+  vars_files:
+   - ../secret/secret.yml
+  roles:
+   - common
+   - base
+   - users
+   - gitcfg
+   - phpcfg
+   - SSLcrt
+   - DB_adm
+   - Drupal
+   - finals
+
+- hosts: mediawiki
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "ubuntu"
+  vars_files:
+   - ../secret/secret.yml
+  roles:
+   - common
+   - base
+   - users
+   - phpcfg
+   - DB_adm
+
+- hosts: jenkins_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "luiz"
+  vars_files:
+   - ../secret/secret.yml
+  roles:
+   - common
+   - base
+   - users
+
+- hosts: php_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "azureuser"
+  vars_files:
+   - ../secret/secret.yml
+  roles:
+   - common
+   - base
+   - phpcfg
+
+- hosts: db_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "azureuser"
+  vars_files:
+   - ../secret/secret.yml
+  roles:
+   - common
+   - base
+   - DB_adm
+   - restore

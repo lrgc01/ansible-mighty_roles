@@ -9,12 +9,12 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
 
-    include snippets/drupalcert.conf;
+    include snippets/{{ domain3 }}-cert.conf;
     #include snippets/testcert.conf;
 
     server_name {{ domain3 }};
 
-    root {{ drupal_site_rootdir }};
+    root {{ domain3_rootdir }};
     index index.php index.html index.htm index.nginx-debian.html;
 
 # Tips for Drupal extracted from:
