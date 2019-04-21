@@ -79,7 +79,7 @@ export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -F ${SSH
 # After first install, the tag "bootstrap_python" can be safely skipped:
 SKIP_TAGS="--skip-tags bootstrap_python"
 
-#ansible-playbook -i hasrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
+ansible-playbook -i hasrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
 #ansible-playbook -i dbsrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS DBservers.yml 
 #ansible-playbook -i dockersrv --extra-vars "gather_y_n=yes update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Dockers.yml 
 ansible-playbook -i websrv --extra-vars "gather_y_n=no update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Site.yml 

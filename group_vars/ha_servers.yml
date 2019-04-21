@@ -38,10 +38,10 @@ backend_servers_string_lines :
 key_base_path           : "/etc/ssl/private"
 cert_base_path          : "/etc/ssl/certs"
 domain1                 : "lrc.sytes.net"
-cert_name_prefix        : "stg-letsencrypt"
-account_key             : "stg-letsencrypt-account-key.key"
-##cert_name_prefix        : "pro-{{ domain1 }}"
-##account_key             : "pro-letsencrypt-account-key.key"
+##cert_name_prefix        : "stg-letsencrypt"
+##account_key             : "stg-letsencrypt-account-key.key"
+cert_name_prefix        : "pro-{{ domain1 }}"
+account_key             : "pro-letsencrypt-account-key.key"
 #
 
 
@@ -144,12 +144,12 @@ cert_hash_list		:
         crt_cert_path		: "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
         crt_fullchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-fullchain.crt",
         crt_interchain_path	: "{{ cert_base_path }}/{{ cert_name_prefix }}-intermmediate.crt",
-        acme_directory		: "https://acme-staging-v02.api.letsencrypt.org/directory",
-        C			: "CA",
-        ST			: "Quebec",
-        L			: "Montreal",
-        O			: "Private site",
-        OU			: "Private site",
+        acme_directory		: "https://acme-v02.api.letsencrypt.org/directory",
+        C			: "BR",
+        ST			: "Brazil",
+        L			: "Curitiba",
+        O			: "Lrc private site",
+        OU			: "Lrc private site",
         email_address		: "luizrogeriocarvalho@gmail.com",
         CN			: "{{ domain1 }}",
         force_cert_y_n		: "no",
