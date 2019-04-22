@@ -34,6 +34,7 @@ web_service             : "nginx"
 dockername_php          : "php"
 dockername_nginx        : "nginx"
 dockername_nginx2       : "nginx2"
+dockername_mysql        : "db1"
 # And inside Docker system
 nginx_etc		: "/var/lib/docker/volumes/nginx_etc/_data"  	# Equivalent to /etc/nginx
 nginx_html		: "/var/www/html" 	                        # Equivalent to /var/www/html
@@ -313,6 +314,16 @@ dockerContainerList :
         published_ports : [ "0.0.0.0:8880:80", "0.0.0.0:4443:443", ] , 
         state           : "started" ,
     }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_mysql }}" ,
+        image           : "lrgc01/mariadb-server-debian9" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "mysql_data:/var/lib/mysql", "mysql_etc:/etc/mysql", ] ,
+        published_ports : [ "0.0.0.0:3306:3306", ] , 
+        state           : "started" ,
+    }
 
 # After container creation:
 #
@@ -335,7 +346,7 @@ docker_dir_file_tmpl_list     :
    - { types : [ "tmpl" ]     , dest : "{{ nginx_etc }}/sites-available" , tmpl : "nginx-default.j2"   , name : "nginx-default" }
    - { types : [ "tmpl" ]     , dest : "{{ nginx_etc }}/sites-available" , tmpl : "nginx_dom1-docker.conf.j2" , name : "{{ domain1 }}.conf" , docker : "{{ dockername_nginx }}" }
    - { types : [ "tmpl" ]     , dest : "{{ nginx_etc }}/snippets"        , tmpl : "nginx_dom1-docker-cert.conf.j2" , name : "{{ domain1 }}-cert.conf"  , docker : "{{ dockername_nginx }}" }
-   - { types : [ "link" ]     , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "{{ nginx_etc }}/sites-enabled/{{ domain1 }}.conf" , force : "yes" }
+   - { types : [ "link" ]     , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "{{ nginx_etc }}/sites-enabled/{{ domain1 }}.conf" , force : "yes" , follow : "no" }
    - { types : [ "absent" ]   , dest : "{{ nginx_etc }}/sites-enabled/default" }
    - { types : [ "absent" ]   , dest : "{{ nginx_etc }}/sites-enabled/nginx-default" }
 #   - { types : [ "dir" ]      , dest : "{{ git_data_dir }}"                    }

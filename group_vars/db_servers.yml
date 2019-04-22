@@ -28,6 +28,7 @@ www_username            : "www-data"
 soft_distrib            : "Orm_test"
 stable_version          : "stable"
 sql_source_dir          : "{{ my_workdir }}/{{ soft_distrib }}-{{ stable_version }}"
+mariadb_cfg_file        : "/var/lib/docker/volumes/mysql_etc/_data/mariadb.conf.d/50-server.cnf"
 
 
 # These below are used with remote ansible python script and once installed it's better not remove them
@@ -46,7 +47,7 @@ base_dep_pkg_list:
 # If a packet has a service associate it should be listed with srv, state and enabled.
 # enabled and state defaults to true and started respectively.
 dep_pkg_list		:
-   - { pkg : "mariadb-server"  }
+        #   - { pkg : "mariadb-server"  }
    - { pkg : "zip"             }
    - { pkg : "unzip"           }
 
@@ -85,12 +86,12 @@ auth_keys_file_list     :
 #
 # DB AWS instance used widely
 #db_host : "websiteinstance.ctxnidj2utoz.us-east-2.rds.amazonaws.com"
-db_host : "localhost"
+db_host : "10.0.0.4"
 db_name : "my_test"
 db_user : "dbuser1"
 db_pass : "dbuserpass123"
 db_admuser : "root"
-db_admpass : ""
+db_admpass : "docker"
 
 #
 # 'db_list[*].dbcreate' switches one entry on/off
@@ -100,7 +101,7 @@ db_list              :
         dbcreate     : true ,
         drop         : false ,
         admuser      : "{{ db_admuser }}", 
-        admpass      : "" ,
+        admpass      : "{{ db_admpass }}" ,
         host         : "{{ db_host }}",
         user         : "{{ db_user }}" ,
         pass         : "{{ db_pass }}" ,
@@ -120,7 +121,7 @@ db_list              :
 sql_bkp_cmd   : "mysqldump -u {{ db_admuser }} -h {{ db_host }} -p{{ db_admpass }} --opt "
 #sql_rest_cmd  : "mysql -u {{ db_admuser }} -h {{ db_host }} -p{{ db_admpass }} "
 #sql_bkp_cmd   : "mysqldump --opt "
-sql_rest_cmd  : "mysql"
+sql_rest_cmd  : "mysql -u {{ db_admuser }} -h {{ db_host }} -p{{ db_admpass }} "
 remote_bkpdir : "{{ my_workdir }}"
 DB_bkp        : "{{ bkptag }}.sql.gz"
 sql_ini_test  : "sql.gz"
@@ -170,12 +171,11 @@ unarchive_bkps    :
 later_lineinfile_config_list :
    - {
        enabled : true ,
-       path   : "/etc/mysql/mariadb.conf.d/50-server.cnf",
+       path   : "{{ mariadb_cfg_file }}",
        owner  : "root" ,
        group  : "root" ,
        mode   : "0644" ,
        regexp : ".*bind-address.*=.*" ,
        line   : "bind-address = 0.0.0.0" , 
-       srv    : "mariadb"
      }
 
