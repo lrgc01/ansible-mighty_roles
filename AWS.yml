@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files: 
+    - ../secret/secret.yml
+  roles:
+   - AWS

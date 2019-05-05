@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  become: true
+  vars_files:
+   - vars_files/base_Azure.yml
+  roles:
+   - common

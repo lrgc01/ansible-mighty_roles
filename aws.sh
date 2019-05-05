@@ -33,8 +33,7 @@ if [ "$?" != 0 ]; then
       exit 
     ;;
   esac
-fi
-
+ fi
 
 PLAYDIR="`dirname $0`"
 
@@ -43,49 +42,37 @@ cd "$PLAYDIR"
 BASEDIR="`pwd`"
 CONFDIR="${BASEDIR}/conf.d"
 SSHCONF="${CONFDIR}/ssh_config"
+FACTSDIR="${BASEDIR}/facts.d"
 
-# Warning: There are particular/private local passwords or keys
-# that should be copied (or linked) in $CONFDIR
 
-# Ensure priv keys in conf.d dir are protected
-chmod go-w,o-rwx ${CONFDIR}/*
-
-export BASEDIR CONFDIR SSHCONF
+export BASEDIR CONFDIR SSHCONF FACTSDIR
 
 export DISPLAY_SKIPPED_HOSTS="false"
 
-export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -F ${SSHCONF}"
+# First check base local pre-requisites, but becoming root with password:
+  ####echo "Local sudo to install local base requirements (may comment line after first run)"
+  ####ansible-playbook -i hosts --ask-become-pass base_AWS.yml
+# can comment the line after first successfull run
 
-# Use --tags "__TAG_NAME__" to restrict ansible-playbook in the following useful tags:
-#  - base_users
-#  - auth_keys
-#  - deploy_templates
-#  - cron_config
-#  - config_files
-#  - ssl_certificate
-#  - databases
-#  - php_config
-#  - drupal_site
-#  - final_config
-# From common: (these first two must be called when python is missing)
-#  - install_dep_pkg
-#  - bootstrap_python
-#  - update_repository
-# To run or not apt update AND apt upgrade
-# update_cache_y_n=yes or no
+# Some usefull tags to pass with --tags or skip with --skip-tags
+#  - base_config
+#  - gather_default_vpc
+#  - create_key_pairs
+#  - create_security_groups
+#  - create_aws_instances
+#  - create_ec2_instances
+#  - create_rds_instances
+#  - change_state_all_ec2_instances
+#  - change_state_all_instances
+#
 
 # First, full, playbook running - no skip
 SKIP_TAGS=""
 # After first install, the tag "bootstrap_python" can be safely skipped:
 #SKIP_TAGS="--skip-tags bootstrap_python"
 
-# Order is important, since Docker will create de DBMS server
-#ansible-playbook -i dockersrv --extra-vars "gather_y_n=yes update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Dockers.yml 
-#ansible-playbook -i hasrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
-#ansible-playbook -i dbsrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS DBservers.yml 
+# The rest of AWS stuff may work with a local non-root user
+#ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" --tags "gather_cfn" AWS.yml
+ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" ${SKIP_TAGS} AWS.yml
 
-SKIP_TAGS="--skip-tags bootstrap_python"
-#ansible-playbook -i websrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Site.yml 
-
-# garbage
 rm -f *.retry
