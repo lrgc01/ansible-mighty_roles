@@ -10,30 +10,63 @@ my_ssh_keys : {
                 path     : "/home/{{ my_adm_user }}/.ssh/authorized_keys" , 
                 key_data : "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQgPStlEpBfSCb7M1Rlk63k5oPwsY6xEe+A0JQ6ssuoTLjtrrrZVg6Wl2z4K3t3SgIeCV/hmtQqROZZEkot6DXxcD7sxy2mpVh99OfdsRyhBStjrwCvkA45kCCA02+OFCB2vm1p6+IvgJ0JOrFVaWHehNxMOT9yy9FeAKdbPivthFDwqC9MNsBuvw2K1AqyGvB1rcxigFTaiNoknuTeEg+vSJzpb39kryNcHxltiPOiUivKJgmLrbqEdO44A+o/oiLEKTWMk0SRjzlV5lXaQiDa+RqOimn9iN4ufYtxc3Kl7WVh4d2zCIDRnmZEOi3E2hSUrTUx5AznXfk0TGiKgw5"
                } 
-# "force" key is used to recursively delete all within each RG.
+# "force_y_n" key is used to recursively delete all within each RG.
+# Mandatory: name, location 
 az_RGList : 
   - { 
-       name     : "RG_one" ,
-       location : "eastus" ,
-       state    : "present" ,
-       force    : true ,
-       tags     : { "Description" : "main RG", } ,
+       name             : "ReGroup1" ,
+       location         : "eastus" ,
+       state            : "present" ,
+       force_y_n        : true ,
+       tags             : { "Description" : "main RG", } ,
   }
+
+# Mandatory: name, rg, rules_list
+# Don't forget port SSH
+az_SGList :
+  - {
+       name             : "SecGroup1" ,
+       rg               : "{{ az_RGList[0].name }}" ,
+       state            : "{{ az_RGList[0].state }}" ,
+       tags             : { "Description" : "main SG", } ,
+       rules_list       : [
+             {
+               name                   : "WebPorts" ,
+               protocol               : "Tcp",
+               source_address_prefix  : "*" , 
+               destination_port_range : [ "80" , "443", ],
+               access                 : "Allow" ,
+               priority               : "950" ,
+               direction              : "Inbound" ,
+             } ,
+             {
+               name                   : "SSHPort" ,
+               protocol               : "Tcp",
+               source_address_prefix  : "*" , 
+               destination_port_range : "22" ,
+               access                 : "Allow" ,
+               priority               : "150" ,
+               direction              : "Inbound" ,
+             } ,
+           ] ,
+    }
 
 # Since Virtual Networks and their Subnets depend on the Resource Group,
 # the state may be the same when creating or destroying.
+# Mandatory: name, rg, addresses
 az_VNetList :
   - {
-       name             : "net1" ,
+       name             : "Net1" ,
        addresses        : "172.16.0.0/12" ,
        rg               : "{{ az_RGList[0].name }}" ,
        state            : "{{ az_RGList[0].state }}" ,
        tags             : { "Description" : "base VNet", } ,
     }
 
+# Mandatory: name, rg, address, VNetwork
 az_SubnetList :
   - {
-       name             : "subnet1" ,
+       name             : "Subnet1" ,
        address          : "172.16.0.0/24" ,
        rg               : "{{ az_RGList[0].name }}" ,
        VNetwork         : "{{ az_VNetList[0].name }}" ,
@@ -41,22 +74,45 @@ az_SubnetList :
        tags             : { "Description" : "subnet 1", } ,
     }
 
+# Mandatory: name, rg
 az_PubIPList  :
   - {
-       name             : "VM101" ,
+       name             : "PubIP_VM1" ,
        rg               : "{{ az_RGList[0].name }}" ,
        state            : "{{ az_VNetList[0].state }}" ,
-       allocation_method: "Static" ,
+       allocation_method: "Dynamic" ,
        domain_name      : "lrgc01" ,
     }
 
+# Mandatory: name, rg, VNetwork, subnet
+az_NetIfList :
+  - {
+       name             : "NetIf1" ,
+       rg               : "{{ az_RGList[0].name }}" ,
+       VNetwork         : "{{ az_VNetList[0].name }}" ,
+       subnet           : "{{ az_SubnetList[0].name }}" ,
+       state            : "{{ az_VNetList[0].state }}" ,
+       security_group   : "{{ az_SGList[0].name }}" ,
+       ip_configurations: [
+             {
+                name                        : "IP1" ,
+                public_ip_address_name      : "{{ az_PubIPList[0].name }}",
+                public_ip_allocation_method : "Dynamic" ,
+                primary                     : true ,
+             } ,
+          ] ,
+       tags             : { "Description" : "Network interface 1", } ,
+    }
+
+# Mandatory: name, rg, image, adminuser
 az_VMList :
   - {
        name             : "VM1" ,
        state            : "present" ,
        rg               : "{{ az_RGList[0].name }}" ,
-       network          : "{{ az_VNetList[0].name }}" ,
+       VNetwork         : "{{ az_VNetList[0].name }}" ,
        subnet           : "{{ az_SubnetList[0].name }}" ,
+       net_ifs          : "{{ az_NetIfList[0].name }}" ,
        vm_size          : "Standard_B1s" ,
        os_type          : "Linux", 
        image            : {

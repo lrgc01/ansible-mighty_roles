@@ -8,13 +8,31 @@
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      name: "{{ item.name }}"
      location: "{{ item.location }}"
-     tags: "{{ item.tags | default(omit) }}"
      state: "{{ item.state | default(omit) }}"
-     force: "{{ item.force | default(omit) }}"
+     force: "{{ item.force_y_n | default(omit) }}"
+     tags: "{{ item.tags | default(omit) }}"
   loop: "{{ az_RGList }}"
   when: az_RGList is defined
   register: resource_group_created
   tags: azure_vm, azure_subnet, azure_vnet, azure_rg
+
+- name: Create / change security groups ---------------------
+  azure_rm_securitygroup:
+     subscription_id: "{{ azureSPList.subscription_id }}"
+     client_id: "{{ azureSPList.appId }}"
+     secret: "{{ azureSPList.password }}"
+     tenant: "{{ azureSPList.tenant }}"
+     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     resource_group: "{{ item.rg }}"
+     name: "{{ item.name }}"
+     state: "{{ item.state | default(omit) }}"
+     rules: "{{ item.rules_list }}"
+     purge_rules: "{{ item.purge_y_n | default(omit) }}"
+     tags: "{{ item.tags | default(omit) }}"
+  loop: "{{ az_SGList  }}"
+  when: az_SGList is defined and resource_group_created is success
+  register: security_group_created
+  tags: azure_sg
 
 - name: Create / change virtual network(s)-------------------
   azure_rm_virtualnetwork:
@@ -68,6 +86,27 @@
   register: public_ip_created
   tags: azure_vm, azure_pub_ip
 
+- name: Create / change Network Interface(s) ----------------
+  azure_rm_networkinterface:
+     subscription_id: "{{ azureSPList.subscription_id }}"
+     client_id: "{{ azureSPList.appId }}"
+     secret: "{{ azureSPList.password }}"
+     tenant: "{{ azureSPList.tenant }}"
+     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     resource_group: "{{ item.rg }}"
+     name: "{{ item.name }}"
+     state: "{{ item.state | default(omit) }}"
+     tags: "{{ item.tags | default(omit) }}"
+     virtual_network: "{{ item.VNetwork }}"
+     subnet_name: "{{ item.subnet }}"
+     os_type: "{{ item.os_type | default(omit) }}"
+     security_group: "{{ item.security_group | default(omit) }}"
+     ip_configurations: "{{ item.ip_configurations | default(omit) }}"
+  loop: "{{ az_NetIfList  }}"
+  when: az_NetIfList is defined and sub_network_created is success
+  register: network_interface_created
+  tags: azure_vm, azure_net_if
+
 - name: Create / modify Virtual Machine(s) ------------------
   azure_rm_virtualmachine:
      subscription_id: "{{ azureSPList.subscription_id }}"
@@ -77,13 +116,16 @@
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
-     vm_size: "{{ item.vm_size }}"
+     vm_size: "{{ item.vm_size | default('Standard_B1s') }}"
      state: "{{ item.state | default(omit) }}"
      admin_username: "{{ item.admuser | default('azureuser') }}"
      ssh_password_enabled: "{{ item.ssh_pass | default(false) }}"
      ssh_public_keys: "{{ item.ssh_public_keys | default(omit) }}"
      tags: "{{ item.tags | default(omit) }}"
      os_type: "{{ item.os_type | default(omit) }}"
+     network_interfaces: "{{ item.net_ifs | default(omit) }}"
+     virtual_network: "{{ item.VNetwork | default(omit) }}"
+     subnet_name: "{{ item.subnet | default(omit) }}"
      image: "{{ item.image }}"
   loop: "{{ az_VMList  }}"
   when: az_VMList is defined and sub_network_created is success
