@@ -28,8 +28,8 @@ web_proxy               : "haproxy"
 web_service_other       : "{{ web_proxy }}"
 backend_servers_string_lines : 
    [ 
-      "server  srv5 10.0.0.4:8800 check" , 
-      "server  srv6 10.0.0.4:8880 check" , 
+      "server  srv5 172.16.0.4:8800 check" , 
+      "server  srv6 172.16.0.4:8880 check" , 
    ]
 
 #

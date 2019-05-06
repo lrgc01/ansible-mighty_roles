@@ -14,6 +14,9 @@ improving.
 The work here is based (and modified) from the git repo:
  - https://github.com/lrgc01/ansible-AWS_dolibarr_drupal.git
 
+Some examples are being built and further information can be found
+in README.examples.
+
 ----------------------------------------------------------------------
 GENERAL STRUCTURE
 ----------------------------------------------------------------------

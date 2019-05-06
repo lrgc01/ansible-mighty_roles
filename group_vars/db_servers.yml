@@ -47,7 +47,7 @@ base_dep_pkg_list:
 # If a packet has a service associate it should be listed with srv, state and enabled.
 # enabled and state defaults to true and started respectively.
 dep_pkg_list		:
-        #   - { pkg : "mariadb-server"  }
+   - { pkg : "mariadb-client"  }
    - { pkg : "zip"             }
    - { pkg : "unzip"           }
 
@@ -86,7 +86,7 @@ auth_keys_file_list     :
 #
 # DB AWS instance used widely
 #db_host : "websiteinstance.ctxnidj2utoz.us-east-2.rds.amazonaws.com"
-db_host : "10.0.0.4"
+db_host : "172.16.0.4"
 db_name : "my_test"
 db_user : "dbuser1"
 db_pass : "dbuserpass123"

@@ -349,7 +349,7 @@ docker_dir_file_tmpl_list     :
    - { types : [ "link" ]     , src  : "/etc/nginx/sites-available/{{ domain1 }}.conf" , dest : "{{ nginx_etc }}/sites-enabled/{{ domain1 }}.conf" , force : "yes" , follow : "no" }
    - { types : [ "absent" ]   , dest : "{{ nginx_etc }}/sites-enabled/default" }
    - { types : [ "absent" ]   , dest : "{{ nginx_etc }}/sites-enabled/nginx-default" }
-#   - { types : [ "dir" ]      , dest : "{{ git_data_dir }}"                    }
+   - { types : [ "dir" ]      , dest : "{{ git_data_dir }}"                    }
 #   - { types : [ "absent" ]       , dest : "{{ www_htmldir }}/README.md" }
 
 # Define local and remote files both for upload (copy)
