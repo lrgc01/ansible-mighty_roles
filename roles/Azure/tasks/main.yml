@@ -24,7 +24,7 @@
   register: resource_group_created
   tags: azure_vm, azure_subnet, azure_vnet, azure_rg
 
-- name: Create / change security groups ---------------------
+- name: Create / Change Security Group(s) -------------------
   azure_rm_securitygroup:
      profile: "{{ az_profile | default(omit) }}"
      cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
@@ -39,7 +39,7 @@
   register: security_group_created
   tags: azure_sg
 
-- name: Create / change virtual network(s)-------------------
+- name: Create / change Virtual Network(s)-------------------
   azure_rm_virtualnetwork:
      profile: "{{ az_profile | default(omit) }}"
      cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
@@ -53,7 +53,7 @@
   register: virtual_network_created
   tags: azure_vm, azure_subnet, azure_vnet
 
-- name: Add / update subnet(s) ------------------------------
+- name: Add / update Subnet(s) ------------------------------
   azure_rm_subnet:
      profile: "{{ az_profile | default(omit) }}"
      cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
