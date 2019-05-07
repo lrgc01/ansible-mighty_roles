@@ -1,19 +1,16 @@
 ---
-# Basic configuration to connect to Azure cloud as admin:
-config_azure_tmpl:
-   - { 
-        types : [ "tmpl" ] , 
-        dest : "/home/luiz/.azure" , 
-        name : "credentials" , 
-        tmpl: "credentials.j2" , 
-     }
-
+# These variables are intended to make Azure tasks' role run, but there is
+# also the need input some sensitive info like az_credentials_list from somewhere 
+# else.
 #
 # According to the message received from the azure ansible module azure_rm_virtualmachine,
 # the path for the ssh public keys is limited to /home/azureuser/.ssh/authorized_keys due to
 # an issue in their creator.
 #
-cert_validation_mode : "ignore"
+az_cert_validation_mode : "ignore"
+
+# Uncomment and change to use something else than the default profile
+#az_profile: "default"
 
 my_adm_user : "azureuser"
 my_ssh_keys : {

@@ -12,7 +12,8 @@
 
 - name: Create / change Resource Group(s)--------------------
   azure_rm_resourcegroup:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      name: "{{ item.name }}"
      location: "{{ item.location }}"
      state: "{{ item.state | default(omit) }}"
@@ -25,7 +26,8 @@
 
 - name: Create / change security groups ---------------------
   azure_rm_securitygroup:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      state: "{{ item.state | default(omit) }}"
@@ -39,7 +41,8 @@
 
 - name: Create / change virtual network(s)-------------------
   azure_rm_virtualnetwork:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      address_prefixes: "{{ item.addresses }}"
@@ -52,7 +55,8 @@
 
 - name: Add / update subnet(s) ------------------------------
   azure_rm_subnet:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      address_prefix: "{{ item.address }}"
@@ -66,7 +70,8 @@
 
 - name: Create / change Public IP(s) ------------------------
   azure_rm_publicipaddress:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      allocation_method: "{{ item.allocation_method | default(omit) }}"
@@ -79,7 +84,8 @@
 
 - name: Create / change Network Interface(s) ----------------
   azure_rm_networkinterface:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      state: "{{ item.state | default(omit) }}"
@@ -96,7 +102,8 @@
 
 - name: Create / modify Virtual Machine(s) ------------------
   azure_rm_virtualmachine:
-     cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
+     profile: "{{ az_profile | default(omit) }}"
+     cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
      vm_size: "{{ item.vm_size | default('Standard_B1s') }}"
