@@ -1,15 +1,26 @@
 ---
+# Basic configuration to connect to Azure cloud as admin:
+config_azure_tmpl:
+   - { 
+        types : [ "tmpl" ] , 
+        dest : "/home/luiz/.azure" , 
+        name : "credentials" , 
+        tmpl: "credentials.j2" , 
+     }
+
 #
 # According to the message received from the azure ansible module azure_rm_virtualmachine,
 # the path for the ssh public keys is limited to /home/azureuser/.ssh/authorized_keys due to
 # an issue in their creator.
 #
 cert_validation_mode : "ignore"
+
 my_adm_user : "azureuser"
 my_ssh_keys : {
                 path     : "/home/{{ my_adm_user }}/.ssh/authorized_keys" , 
                 key_data : "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQgPStlEpBfSCb7M1Rlk63k5oPwsY6xEe+A0JQ6ssuoTLjtrrrZVg6Wl2z4K3t3SgIeCV/hmtQqROZZEkot6DXxcD7sxy2mpVh99OfdsRyhBStjrwCvkA45kCCA02+OFCB2vm1p6+IvgJ0JOrFVaWHehNxMOT9yy9FeAKdbPivthFDwqC9MNsBuvw2K1AqyGvB1rcxigFTaiNoknuTeEg+vSJzpb39kryNcHxltiPOiUivKJgmLrbqEdO44A+o/oiLEKTWMk0SRjzlV5lXaQiDa+RqOimn9iN4ufYtxc3Kl7WVh4d2zCIDRnmZEOi3E2hSUrTUx5AznXfk0TGiKgw5"
                } 
+
 # "force_y_n" key is used to recursively delete all within each RG.
 # Mandatory: name, location 
 az_RGList : 

@@ -1,10 +1,17 @@
 ---
+- name: Credential INI file to run Azure --------------------
+  ini_file:
+    path: "{{ item.path }}"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+  loop: "{{ az_credentials_list }}"
+  when: az_credentials_list is defined
+  register: azure_configured
+  tags: config_azure
+
 - name: Create / change Resource Group(s)--------------------
   azure_rm_resourcegroup:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      name: "{{ item.name }}"
      location: "{{ item.location }}"
@@ -18,10 +25,6 @@
 
 - name: Create / change security groups ---------------------
   azure_rm_securitygroup:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
@@ -36,10 +39,6 @@
 
 - name: Create / change virtual network(s)-------------------
   azure_rm_virtualnetwork:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
@@ -53,10 +52,6 @@
 
 - name: Add / update subnet(s) ------------------------------
   azure_rm_subnet:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
@@ -71,10 +66,6 @@
 
 - name: Create / change Public IP(s) ------------------------
   azure_rm_publicipaddress:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
@@ -88,10 +79,6 @@
 
 - name: Create / change Network Interface(s) ----------------
   azure_rm_networkinterface:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
@@ -109,10 +96,6 @@
 
 - name: Create / modify Virtual Machine(s) ------------------
   azure_rm_virtualmachine:
-     subscription_id: "{{ azureSPList.subscription_id }}"
-     client_id: "{{ azureSPList.appId }}"
-     secret: "{{ azureSPList.password }}"
-     tenant: "{{ azureSPList.tenant }}"
      cert_validation_mode: "{{ cert_validation_mode | default(omit) }}"
      resource_group: "{{ item.rg }}"
      name: "{{ item.name }}"
