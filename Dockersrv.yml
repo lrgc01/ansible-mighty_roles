@@ -1,0 +1,11 @@
+---
+- hosts: dockersrv
+  gather_facts: true
+  become: true
+  vars_files:
+    - ../secret/secret.yml
+    - vars_files/Dockersrv.yml
+  roles:
+    - common
+    - base
+    - Docker

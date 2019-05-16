@@ -13,7 +13,7 @@ chmod go-w,o-rwx ${CONFDIR}/*
 
 export BASEDIR CONFDIR SSHCONF
 
-export DISPLAY_SKIPPED_HOSTS="false"
+export ANSIBLE_DISPLAY_SKIPPED_HOSTS="false"
 
 export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -F ${SSHCONF}"
 

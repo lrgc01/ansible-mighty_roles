@@ -4,11 +4,11 @@
   become: true
   remote_user: "azureuser"
   roles:
-   - common
-   - base
-   - users
-   - Docker
-   - gitcfg
-   - phpcfg
-#   - SSLcrt
-   - finals
+    - common
+    - base
+    - users
+    - Docker
+    - gitcfg
+    - phpcfg
+#    - SSLcrt
+    - finals

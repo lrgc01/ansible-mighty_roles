@@ -47,7 +47,7 @@ FACTSDIR="${BASEDIR}/facts.d"
 
 export BASEDIR CONFDIR SSHCONF FACTSDIR
 
-export DISPLAY_SKIPPED_HOSTS="false"
+export ANSIBLE_DISPLAY_SKIPPED_HOSTS="false"
 
 # First check base local pre-requisites, but becoming root with password:
   #echo "Local sudo to install local base requirements (may comment line after first run)"

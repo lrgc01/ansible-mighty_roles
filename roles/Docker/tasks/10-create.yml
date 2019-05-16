@@ -11,6 +11,14 @@
 #    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
 #  tags: my_debug
 
+- name: Log into DockerHub --------------------------------
+  docker_login:
+     username: "{{ docker_username }}"
+     password: "{{ docker_password }}"
+  when: docker_username is defined and docker_password is defined
+  register: docker_logged_in
+  tags: docker
+
 - name: Docker network deployment -------------------------
   docker_network:
      name: "{{ item }}"
