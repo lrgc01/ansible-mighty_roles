@@ -14,6 +14,9 @@
 #       keyId   : "0EBFCD88" ,
 #    }
 
+# Packages to install apt keys later
+# apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
+
 # Some very early pip python packs (It's inside roles/Docker/defaults/main.yml)
 #pip_install_list        : [ "docker" ]
 
