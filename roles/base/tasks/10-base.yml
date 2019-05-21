@@ -4,7 +4,7 @@
     pkg: "{{ item.pkg }}" 
     state: "present"
   loop: "{{ dep_pkg_list }}"
-  when: dep_pkg_list[0]
+  when: dep_pkg_list is defined and item.pkg is defined
   register: dep_pkg_installed
   tags: install_dep_pkg
 
