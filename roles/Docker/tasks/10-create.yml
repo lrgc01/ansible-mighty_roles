@@ -44,6 +44,7 @@
      published_ports: "{{ item.published_ports | default(omit) }}"
      purge_networks: "{{ item.purge_networks | default(omit) }}"
      state: "{{ item.state | default('started') }}"
+     networks_cli_compatible: true
   loop: "{{ dockerContainerList }}"
   when: dockerContainerList is defined and item.enabled and docker_networks_created is success
   register: container_created

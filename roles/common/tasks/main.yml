@@ -6,7 +6,8 @@
 #  tags: update_repository
 #
 - name: Install remote python if not installed ------------
-  raw: "if [ ! -f /usr/bin/python ] ; then apt install -y python ; exit 0 ; fi; exit 0"
+  raw: "if [ ! -f {{ ansible_python_interpreter }} ] ; then apt install -y `basename {{ ansible_python_interpreter }}` ; fi "
+  when: ansible_python_interpreter is defined
   tags: bootstrap_python
 
 - name: Install requisite packages to run apt_key ---------
@@ -65,6 +66,6 @@
     pkg: "{{ item.pkg }}"
     state: "present"
   loop: "{{ base_dep_pkg_list }}"
-  when: base_dep_pkg_list[0]
+  when: base_dep_pkg_list is defined
   register: base_dep_pkg_installed
   tags: install_base_pkg
