@@ -12,6 +12,7 @@
      published_ports: "{{ item.published_ports | default(omit) }}"
      purge_networks: "{{ item.purge_networks | default(omit) }}"
      state: absent
+     networks_cli_compatible: true
   loop: "{{ dockerContainerList }}"
   when: dockerContainerList[0] and item.enabled 
   register: container_removed
