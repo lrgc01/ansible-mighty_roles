@@ -2,4 +2,7 @@
 lrgc01.eastus.cloudapp.azure.com
 
 [dockersrv]
-debian3
+my-ex-3.eastus.cloudapp.azure.com
+
+[dockersrv:vars]
+#ansible_python_interpreter=/usr/bin/python3
