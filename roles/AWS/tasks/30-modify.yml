@@ -1,8 +1,8 @@
 ---
 - name: Reboot RDS instance by name -------
   rds:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     command: reboot
     region: "{{ region }}"
     instance_name: "{{ dbInstanceName }}"
@@ -11,8 +11,8 @@
 
 - name: Start/stop EC2 instances by tag ---
   ec2:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: "{{ item.state }}"
     region: "{{ region }}"
     instance_tags: "{{ item.tags }}"
@@ -25,8 +25,8 @@
 
 - name: Start/stop all EC2 instances ------
   ec2:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: "{{ allEc2InstancesState }}"
     region: "{{ region }}"
     instance_ids: "{{ item.instance_id }}"

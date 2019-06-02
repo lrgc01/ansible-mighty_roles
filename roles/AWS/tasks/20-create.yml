@@ -3,8 +3,8 @@
 # Security groups and key pairs - almost aways mandatory
 - name: Create security groups ------------
   ec2_group:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: "present"
     region: "{{ region }}"
     name: "{{ item.name }}"
@@ -18,8 +18,8 @@
 
 - name: Create EC2 key pairs --------------
   ec2_key:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
     name: "{{ item.name }}"
   loop: "{{ keyPairList }}"
@@ -31,8 +31,8 @@
 # EC2 instances
 - name: Create EC2 instances --------------
   ec2:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: "present"
     wait: "yes"
     region: "{{ region }}"
@@ -55,8 +55,8 @@
 # RDS instances
 - name: Create RDS instances --------------
   rds:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     command: create
     region: "{{ region }}"
     publicly_accessible: "false"
@@ -79,8 +79,8 @@
 # EFS file system (to export via NFS)
 - name: Create EFS file systems -----------
   efs:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
     state: "{{ item.state }}"
     name: "{{ item.name }}"
@@ -97,16 +97,16 @@
 # CloudFront configs (CFN)
 - name: Gather CFN instances facts --------
   cloudfront_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     all_lists: "yes"
   register: cfn_facts
   tags: gather_cfn, change_state_all_instances, create_cfn_instances, create_aws_instances
 
 - name: Create CloudFront distribution ----
   cloudfront_distribution:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
     state: "{{ cloudfrontInstances[0].state }}"
     default_origin_domain_name: "{{ cloudfrontInstances[0].domainname }}"

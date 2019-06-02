@@ -19,8 +19,8 @@
 
 - name: Gather default VPC facts ----------
   ec2_vpc_net_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     filters:
       isDefault: "true"
   register: vpc_facts
@@ -44,8 +44,8 @@
 
 - name: Gather default subnets ------------
   ec2_vpc_subnet_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     filters:
       vpc-id: "{{ vpc_facts.vpcs[0].vpc_id }}"
   when: vpc_facts is success

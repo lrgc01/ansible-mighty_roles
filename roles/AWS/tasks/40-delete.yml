@@ -1,8 +1,8 @@
 ---
 - name: Delete RDS instance by name -------
   rds:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     command: delete
     region: "{{ region }}"
     instance_name: "{{ item }}"
@@ -15,8 +15,8 @@
 # list of ids to delete
 - name: Delete EC2 instances --------------
   ec2:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: absent
     region: "{{ region }}"
     instance_ids: "{{ item }}"
@@ -27,8 +27,8 @@
 
 - name: Remove key pair by its name -------
   ec2_key:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     name: "{{ item }}"
     state: absent
   loop: "{{ keys_to_remove_by_name }}"

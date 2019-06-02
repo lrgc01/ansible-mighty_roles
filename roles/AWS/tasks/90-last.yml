@@ -11,8 +11,8 @@
 
 - name: Gather EC2 instances facts --------
   ec2_instance_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     #filters:
       #"tag:Name": "{{ item.tags.Name }}"
   #loop: "{{ ec2_instances }}"
@@ -21,22 +21,22 @@
 
 - name: Gather RDS instances facts --------
   rds_instance_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
   register: rds_facts
   tags: gather_rds, change_state_all_instances, create_rds_instances, create_aws_instances
 
 - name: Gather EFS filesystems facts ------
   efs_facts:
-    aws_access_key: "{{ aws_access_key }}"
-    aws_secret_key: "{{ aws_secret_key }}"
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
   register: efs_facts
   tags: gather_efs, change_state_all_instances, create_efs_instances, create_aws_instances
 
 #- name: Gather CFN instances facts --------
 #  cloudfront_facts:
-#    aws_access_key: "{{ aws_access_key }}"
-#    aws_secret_key: "{{ aws_secret_key }}"
+#    aws_access_key: "{{ aws_access_key | default(omit) }}"
+#    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
 #    all_lists: "yes"
 #  register: cfn_facts
 #  tags: gather_cfn, change_state_all_instances, create_cfn_instances, create_aws_instances
