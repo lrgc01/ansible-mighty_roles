@@ -1,5 +1,17 @@
 #!/bin/sh
 
+# READ command line
+while [ "$#" -gt 0 ]; do
+   case "$1" in
+      "--auth") ASK_AUTH="y"
+      ;;
+      "--noauth") ASK_AUTH="silent"
+      ;;
+   esac
+   shift
+done
+
+
 # Check base packages to continue
 which sudo > /dev/null 2>&1
 [ "$?" != 0 ] && ( echo "You must install sudo to run this script"; exit 1 )
@@ -55,8 +67,8 @@ export ANSIBLE_DISPLAY_SKIPPED_HOSTS="false"
 # can comment the line after first successfull run
 
 # Read credentials from input line
-READ_LINE="y"
-if [ "$READ_LINE" = "y" ]; then
+if [ "$ASK_AUTH" = "y" ]; then
+	echo "Echo mode off. Typing won't show up"
 	echo -n "Enter AWS Access ID:"
 	stty -echo
 	read AWS_ACCESS_KEY_ID
@@ -68,6 +80,16 @@ if [ "$READ_LINE" = "y" ]; then
 	echo
 	stty echo
 	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+	echo "Echo mode on."
+else
+    if [ "$ASK_AUTH" != "silent" ] ; then
+	echo "#########################################################"
+	echo "  This script can as key id/pass pair from command line"
+	echo "  in order to set the environment variables to "
+	echo "  authenticate in AWS. Just call it with --auth."
+	echo "  To dismiss this message call with --noauth."
+	echo "#########################################################"
+    fi
 fi
 
 # Some usefull tags to pass with --tags or skip with --skip-tags
@@ -89,6 +111,6 @@ SKIP_TAGS=""
 
 # The rest of AWS stuff may work with a local non-root user
 #ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" --tags "gather_cfn" AWS.yml
-ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" ${SKIP_TAGS} AWS.yml
+ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" ${SKIP_TAGS} AWS.yml -vvv
 
 rm -f *.retry
