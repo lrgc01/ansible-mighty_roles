@@ -4,6 +4,6 @@
   gather_facts: false
   become: false
   vars_files: 
-    - ../secret/secret.yml
+    - ../secret/aws.yml
   roles:
    - AWS

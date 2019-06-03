@@ -6,7 +6,8 @@
     content: "{{ item | to_nice_json }}"
     dest: "{{ facts_out_dir }}/{{ item.group_id }}-{{ item.group_name }}.json"
   loop: "{{ created_sg.results }}"
-  when: created_sg is success and 'results' in created_sg
+  when: created_sg is success and 'results' in created_sg and
+        item.group_id is defined and item.group_name is defined
   tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
 
 - name: Gather EC2 instances facts --------

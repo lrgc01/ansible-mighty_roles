@@ -6,7 +6,7 @@
     command: reboot
     region: "{{ region }}"
     instance_name: "{{ dbInstanceName }}"
-  when: dbInstanceName is defined and false
+  when: dbInstanceName is defined 
   tags: reboot_rds_instance, reboot_instance
 
 - name: Start/stop EC2 instances by tag ---
@@ -19,7 +19,7 @@
     wait: "yes"
   loop: "{{ ec2Instances }}"
   register: instances_state
-  when: (ec2Instances is defined and allEc2InstancesState is not defined) and
+  when: ec2Instances is defined and allEc2InstancesState is not defined and
         (item.state == "running" or item.state == "stopped" or item.state == "rebooted")
   tags: change_state_ec2_instance, change_state_instance
 

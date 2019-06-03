@@ -4,6 +4,7 @@
     path: "{{ awsHomeDir }}"
     state: "directory"
     mode: "0755"
+  when: awsHomeDir is defined
   register: aws_dir_created
   tags: base_config
 
@@ -14,6 +15,7 @@
     option: "{{ item.option }}"
     value: "{{ item.value }}"
   loop: "{{ awsIniPairs }}"
+  when: awsIniPairs is defined
   register: aws_ini_updated
   tags: base_config
 

@@ -56,7 +56,6 @@ CONFDIR="${BASEDIR}/conf.d"
 SSHCONF="${CONFDIR}/ssh_config"
 FACTSDIR="${BASEDIR}/facts.d"
 
-
 export BASEDIR CONFDIR SSHCONF FACTSDIR
 
 export ANSIBLE_DISPLAY_SKIPPED_HOSTS="false"
@@ -82,14 +81,16 @@ if [ "$ASK_AUTH" = "y" ]; then
 	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 	echo "Echo mode on."
 else
-    if [ "$ASK_AUTH" != "silent" ] ; then
+   if [ "$AWS_ACCESS_KEY_ID" = "" -o "$AWS_SECRET_ACCESS_KEY" = "" ] ; then
+     if [ "$ASK_AUTH" != "silent" ]; then
 	echo "#########################################################"
 	echo "  This script can as key id/pass pair from command line"
 	echo "  in order to set the environment variables to "
 	echo "  authenticate in AWS. Just call it with --auth."
 	echo "  To dismiss this message call with --noauth."
 	echo "#########################################################"
-    fi
+     fi
+   fi
 fi
 
 # Some usefull tags to pass with --tags or skip with --skip-tags
@@ -111,6 +112,6 @@ SKIP_TAGS=""
 
 # The rest of AWS stuff may work with a local non-root user
 #ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" --tags "gather_cfn" AWS.yml
-ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" ${SKIP_TAGS} AWS.yml -vvv
+ansible-playbook -i hosts --extra-vars "gather_y_n=false basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF} facts_out_dir=${FACTSDIR}" ${SKIP_TAGS} AWS.yml
 
 rm -f *.retry

@@ -1,14 +1,14 @@
 ---
 ########################################################
 # Security groups and key pairs - almost aways mandatory
-- name: Create security groups ------------
+- name: Create / Remove security groups ---
   ec2_group:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
-    state: "present"
+    state: "{{ item.state | default(omit) }}"
     region: "{{ region }}"
     name: "{{ item.name }}"
-    description: "{{ item.description | default('') }}"
+    description: "{{ item.description | default(omit) }}"
     vpc_id: "{{ item.vpc_id | default(vpc_facts.vpcs[0].vpc_id) }}"
     rules: "{{ item.rules }}"
   loop: "{{ securityGroupList }}"
@@ -29,7 +29,7 @@
   tags: create_key_pairs, create_rds_instances, create_ec2_instances, create_aws_instances
 
 #############################
-# EC2 instances
+# EC2 instances ('wait' = 'yes' to its completion)
 - name: Create EC2 instances --------------
   ec2:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
@@ -83,19 +83,19 @@
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
-    state: "{{ item.state }}"
+    state: "{{ item.state | default(omit) }}"
     name: "{{ item.name }}"
     targets: "{{ item.targets | default(local_targets) }}"
     tags: "{{ item.tags }}"
   loop: "{{ efsInstances }}"
-  when: efsInstances is defined and item.state == "present" and default_subnets is success
+  when: efsInstances is defined and default_subnets is success
   vars:
     local_targets: "{{ default_subnets | json_query('subnets[*].{subnet_id: subnet_id}') }}"
   register: efs_instance_created
   tags: create_efs_instances, create_aws_instances
 
-################################
-# CloudFront configs (CFN)
+#############################################
+# CloudFront configs (CFN) - still work to do
 - name: Gather CFN instances facts --------
   cloudfront_facts:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
@@ -116,7 +116,7 @@
   #loop: "{{ cloudfrontInstances }}"
   #when: cloudfrontInstances[0] and default_subnets is success
   # When variables are defined and facts returned no list
-  when: cloudfrontInstances is defined and item.enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
+  when: cloudfrontInstances is defined and cloudfrontInstances[0].enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
   register: cloudfront_instance_created
   tags: create_cfn_instances, create_aws_instances
 
