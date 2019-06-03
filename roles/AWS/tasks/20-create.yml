@@ -12,8 +12,8 @@
     vpc_id: "{{ item.vpc_id | default(vpc_facts.vpcs[0].vpc_id) }}"
     rules: "{{ item.rules }}"
   loop: "{{ securityGroupList }}"
+  when: vpc_facts is success and securityGroupList is defined
   register: created_sg
-  when: vpc_facts is success
   tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
 
 - name: Create EC2 key pairs --------------
@@ -23,6 +23,7 @@
     region: "{{ region }}"
     name: "{{ item.name }}"
   loop: "{{ keyPairList }}"
+  when: keyPairList is defined
   notify: Copy EC2 Private Key
   register: keypair_registered
   tags: create_key_pairs, create_rds_instances, create_ec2_instances, create_aws_instances
@@ -45,7 +46,7 @@
     assign_public_ip: "{{ item.pub_ip | default(\"yes\") }}"
     id: "{{ region + '_' + item.tags.Name + '_' + item.type + '_' + item.image }}"
   loop: "{{ ec2Instances }}"
-  when: ec2Instances[0] and item.state == "present" and default_subnets is success
+  when: ec2Instances is defined and item.state == "present" and default_subnets is success
   vars:
     pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list | shuffle(seed=ansible_hostname) }}"
   register: create_ec2_instances
@@ -69,7 +70,7 @@
     password: "{{ item.password }}"
     tags: "{{ item.tags }}"
   loop: "{{ rdsInstancesByName }}"
-  when: rdsInstancesByName[0] and created_sg is success
+  when: rdsInstancesByName is defined and created_sg is success
   vars:
     sg_id: "results[?group_name=='{{ item.sg_name }}'].group_id"
   register: created_db_instance
@@ -87,7 +88,7 @@
     targets: "{{ item.targets | default(local_targets) }}"
     tags: "{{ item.tags }}"
   loop: "{{ efsInstances }}"
-  when: efsInstances[0] and item.state == "present" and default_subnets is success
+  when: efsInstances is defined and item.state == "present" and default_subnets is success
   vars:
     local_targets: "{{ default_subnets | json_query('subnets[*].{subnet_id: subnet_id}') }}"
   register: efs_instance_created
@@ -115,7 +116,7 @@
   #loop: "{{ cloudfrontInstances }}"
   #when: cloudfrontInstances[0] and default_subnets is success
   # When variables are defined and facts returned no list
-  when: cloudfrontInstances[0].enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
+  when: cloudfrontInstances is defined and item.enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
   register: cloudfront_instance_created
   tags: create_cfn_instances, create_aws_instances
 

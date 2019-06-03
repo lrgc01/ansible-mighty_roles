@@ -50,9 +50,25 @@ export BASEDIR CONFDIR SSHCONF FACTSDIR
 export ANSIBLE_DISPLAY_SKIPPED_HOSTS="false"
 
 # First check base local pre-requisites, but becoming root with password:
-echo "Local sudo to install local base requirements (may comment line after first run)"
-ansible-playbook -i hosts --ask-become-pass base_AWS.yml
+##echo "Local sudo to install local base requirements (may comment line after first run)"
+##ansible-playbook -i hosts --ask-become-pass base_AWS.yml
 # can comment the line after first successfull run
+
+# Read credentials from input line
+READ_LINE="y"
+if [ "$READ_LINE" = "y" ]; then
+	echo -n "Enter AWS Access ID:"
+	stty -echo
+	read AWS_ACCESS_KEY_ID
+	echo
+	stty echo
+	echo -n "Enter AWS Access key:"
+	stty -echo
+	read AWS_SECRET_ACCESS_KEY
+	echo
+	stty echo
+	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+fi
 
 # Some usefull tags to pass with --tags or skip with --skip-tags
 #  - base_config

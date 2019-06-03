@@ -19,7 +19,7 @@
     wait: "yes"
   loop: "{{ ec2Instances }}"
   register: instances_state
-  when: (ec2Instances[0] and allEc2InstancesState is not defined) and
+  when: (ec2Instances is defined and allEc2InstancesState is not defined) and
         (item.state == "running" or item.state == "stopped" or item.state == "rebooted")
   tags: change_state_ec2_instance, change_state_instance
 
