@@ -15,7 +15,7 @@
     pkg: "{{ item }}"
     state: "present"
   loop: "{{ apt_key_req_packs }}"
-  when: apt_key_req_packs is defined
+  when: apt_key_req_packs is defined and listAptRepos is defined
   register: req_to_apt_key_installed
   tags: update_repository, apt_keys
 
