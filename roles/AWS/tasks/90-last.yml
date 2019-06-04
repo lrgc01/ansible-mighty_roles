@@ -97,7 +97,7 @@
   template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
-  loop: "{{ my_templates }}"
-  when: ec2_facts is success and my_templates is defined
+  loop: "{{ myTemplates }}"
+  when: ec2_facts is success and myTemplates is defined
   tags: config_files, config_ansible_host_file
 

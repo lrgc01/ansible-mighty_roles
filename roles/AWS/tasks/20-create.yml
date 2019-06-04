@@ -22,6 +22,7 @@
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
     name: "{{ item.name }}"
+    state: "{{ item.state | default(omit) }}"
   loop: "{{ keyPairList }}"
   when: keyPairList is defined
   notify: Copy EC2 Private Key
@@ -35,7 +36,7 @@
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     state: "present"
-    wait: "yes"
+    wait: "{{ item.wait | default ('yes') }}"
     region: "{{ region }}"
     instance_tags: "{{ item.tags | default(omit) }}"
     image: "{{ item.image }}"
@@ -43,10 +44,34 @@
     instance_type: "{{ item.type }}"
     key_name: "{{ item.key_name }}"
     vpc_subnet_id: "{{ item.subnet_id | default(pick_subnet[0]) }}"
-    assign_public_ip: "{{ item.pub_ip | default(\"yes\") }}"
+    assign_public_ip: "{{ item.pub_ip | default(true) }}"
     id: "{{ region + '_' + item.tags.Name + '_' + item.type + '_' + item.image }}"
+    termination_protection: "{{ item.term_prot | default(omit) }}"
   loop: "{{ ec2Instances }}"
-  when: ec2Instances is defined and item.state == "present" and default_subnets is success
+  when: ec2Instances is defined and item.state == "present" and default_subnets is success and false
+  vars:
+    pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list | shuffle(seed=ansible_hostname) }}"
+  register: create_ec2_instances
+  tags: create_ec2_instances, create_aws_instances
+
+- name: Create/Modify/Destroy EC2 instances
+  ec2_instance:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+    wait: "{{ item.wait | default ('yes') }}"
+    region: "{{ region }}"
+    tags: "{{ item.tags | default(omit) }}"
+    image_id: "{{ item.image }}"
+    security_groups: "{{ item.SG_name }}"
+    instance_type: "{{ item.type | default(omit) }}"
+    key_name: "{{ item.key_name }}"
+    vpc_subnet_id: "{{ item.subnet_id | default(pick_subnet[0]) }}"
+    network: 
+       assign_public_ip: "{{ item.pub_ip | default(true) }}"
+    termination_protection: "{{ item.term_prot | default(omit) }}"
+  loop: "{{ ec2Instances }}"
+  when: ec2Instances is defined and default_subnets is success 
   vars:
     pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list | shuffle(seed=ansible_hostname) }}"
   register: create_ec2_instances

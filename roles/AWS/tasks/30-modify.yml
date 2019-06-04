@@ -21,6 +21,7 @@
   register: instances_state
   when: ec2Instances is defined and allEc2InstancesState is not defined and
         (item.state == "running" or item.state == "stopped" or item.state == "rebooted")
+        and false
   tags: change_state_ec2_instance, change_state_instance
 
 - name: Start/stop all EC2 instances ------
@@ -32,7 +33,7 @@
     instance_ids: "{{ item.instance_id }}"
     wait: "yes"
   loop: "{{ ec2_facts.instances }}"
-  when: allEc2InstancesState is defined
+  when: allEc2InstancesState is defined 
   register: instances_state
   tags: change_state_all_ec2_instances, change_state_all_instances
 
