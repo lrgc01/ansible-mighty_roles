@@ -8,7 +8,9 @@
   loop: "{{ created_sg.results }}"
   when: created_sg is success and 'results' in created_sg and
         item.group_id is defined and item.group_name is defined
-  tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
+  tags: create_security_groups, change_state_all_ec2_instances, 
+        change_state_all_instances, create_ec2_instances, 
+        create_rds_instances, create_aws_instances
 
 - name: Gather EC2 instances facts --------
   ec2_instance_facts:
@@ -18,14 +20,16 @@
       #"tag:Name": "{{ item.tags.Name }}"
   #loop: "{{ ec2_instances }}"
   register: ec2_facts
-  tags: gather_ec2, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_aws_instances
+  tags: gather_ec2, change_state_all_ec2_instances, 
+        change_state_all_instances, create_ec2_instances, create_aws_instances
 
 - name: Gather RDS instances facts --------
   rds_instance_facts:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
   register: rds_facts
-  tags: gather_rds, change_state_all_instances, create_rds_instances, create_aws_instances
+  tags: gather_rds, change_state_all_instances, 
+        create_rds_instances, create_aws_instances
 
 - name: Gather EFS filesystems facts ------
   efs_facts:
@@ -56,7 +60,8 @@
     dest: "{{ facts_out_dir }}/{{ item.db_instance_identifier }}.json"
   loop: "{{ rds_facts.instances }}"
   when: rds_facts is success
-  tags: gather_rds, change_state_all_instances, create_rds_instances, create_aws_instances
+  tags: gather_rds, change_state_all_instances, 
+        create_rds_instances, create_aws_instances
 
 - name: Copy EFS filesystems facts --------
   copy:
@@ -91,7 +96,8 @@
     dest: "{{ facts_out_dir }}/{{ item.db_instance_identifier }}.rc"
   loop: "{{ rds_facts.instances }}"
   when: rds_facts is success and item.endpoint is defined
-  tags: gather_rds, change_state_all_instances, create_rds_instances, create_aws_instances
+  tags: gather_rds, change_state_all_instances, 
+        create_rds_instances, create_aws_instances
 
 - name: Deploy templates for inventory ----
   template:

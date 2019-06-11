@@ -1,7 +1,7 @@
 ---
 ########################################################
 # Security groups and key pairs - almost aways mandatory
-- name: Create / Remove security groups ---
+- name: Create/Modify/Delete sec groups ---
   ec2_group:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
@@ -12,8 +12,8 @@
     vpc_id: "{{ item.vpc_id | default(vpc_facts.vpcs[0].vpc_id) }}"
     rules: "{{ item.rules }}"
   loop: "{{ securityGroupList }}"
-  when: vpc_facts is success and securityGroupList is defined
   register: created_sg
+  when: vpc_facts is success and securityGroupList is defined
   tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
 
 - name: Create EC2 key pairs --------------
@@ -31,29 +31,6 @@
 
 #############################
 # EC2 instances ('wait' = 'yes' to its completion)
-- name: Create EC2 instances --------------
-  ec2:
-    aws_access_key: "{{ aws_access_key | default(omit) }}"
-    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
-    state: "present"
-    wait: "{{ item.wait | default ('yes') }}"
-    region: "{{ region }}"
-    instance_tags: "{{ item.tags | default(omit) }}"
-    image: "{{ item.image }}"
-    group: "{{ item.SG_name }}"
-    instance_type: "{{ item.type }}"
-    key_name: "{{ item.key_name }}"
-    vpc_subnet_id: "{{ item.subnet_id | default(pick_subnet[0]) }}"
-    assign_public_ip: "{{ item.pub_ip | default(true) }}"
-    id: "{{ region + '_' + item.tags.Name + '_' + item.type + '_' + item.image }}"
-    termination_protection: "{{ item.term_prot | default(omit) }}"
-  loop: "{{ ec2Instances }}"
-  when: ec2Instances is defined and item.state == "present" and default_subnets is success and false
-  vars:
-    pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list | shuffle(seed=ansible_hostname) }}"
-  register: create_ec2_instances
-  tags: create_ec2_instances, create_aws_instances
-
 - name: Create/Modify/Destroy EC2 instances
   ec2_instance:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
@@ -78,26 +55,30 @@
   tags: create_ec2_instances, create_aws_instances
 
 #############################
-# RDS instances
-- name: Create RDS instances --------------
-  rds:
+# RDS instances ('wait' = 'yes' to its completion)
+- name: Create/Modify/Delete RDS instances
+  rds_instance:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
-    command: create
     region: "{{ region }}"
-    publicly_accessible: "false"
+    state: "{{ item.command }}"
+    publicly_accessible: "{{ item.pub_access | default(omit) }}"
     instance_type: "{{ item.type }}"
-    instance_name: "{{ item.name }}"
-    db_engine: "{{ item.engine }}"
-    size: "{{ item.size }}"
-    vpc_security_groups: "{{ created_sg | json_query(sg_id) }}"
+    db_name: "{{ item.db_name }}"
+    db_instance_identifier: "{{ item.db_name }}"
+    engine: "{{ item.engine }}"
+    allocated_storage: "{{ item.storage | default(omit) }}"
+    vpc_security_group_ids: "{{ created_sg | json_query(sg_id) }}"
     username: "{{ item.username }}"
     password: "{{ item.password }}"
     tags: "{{ item.tags }}"
+    wait: "{{ item.wait | default(true) }}"
+    skip_final_snapshot: "{{ item.skip_final_snapshot | default(omit) }}"
+    final_db_snapshot_identifier: "{{ item.final_db_snapshot_identifier | default(omit) }}"
   loop: "{{ rdsInstancesByName }}"
   when: rdsInstancesByName is defined and created_sg is success
   vars:
-    sg_id: "results[?group_name=='{{ item.sg_name }}'].group_id"
+     sg_id: "results[?group_name=='{{ item.sg_name }}'].group_id"
   register: created_db_instance
   tags: create_rds_instances, create_aws_instances
 
