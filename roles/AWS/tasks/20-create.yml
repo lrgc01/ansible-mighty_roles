@@ -14,9 +14,11 @@
   loop: "{{ securityGroupList }}"
   register: created_sg
   when: vpc_facts is success and securityGroupList is defined
-  tags: create_security_groups, change_state_all_ec2_instances, change_state_all_instances, create_ec2_instances, create_rds_instances, create_aws_instances
+  tags: create_security_groups, change_state_all_ec2_instances, 
+        change_state_all_instances, create_ec2_instances, 
+        create_rds_instances, create_aws_instances
 
-- name: Create EC2 key pairs --------------
+- name: Create/Delete EC2 key pairs -------
   ec2_key:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
@@ -24,14 +26,15 @@
     name: "{{ item.name }}"
     state: "{{ item.state | default(omit) }}"
   loop: "{{ keyPairList }}"
-  when: keyPairList is defined
   notify: Copy EC2 Private Key
+  when: keyPairList is defined
   register: keypair_registered
-  tags: create_key_pairs, create_rds_instances, create_ec2_instances, create_aws_instances
+  tags: create_key_pairs, create_rds_instances,
+        create_ec2_instances, create_aws_instances
 
 #############################
 # EC2 instances ('wait' = 'yes' to its completion)
-- name: Create/Modify/Destroy EC2 instances
+- name: Create/Modify/Delete EC2 instances
   ec2_instance:
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"

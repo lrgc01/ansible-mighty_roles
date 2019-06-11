@@ -28,7 +28,8 @@
     filters:
       isDefault: "true"
   register: vpc_facts
-  tags: gather_default_vpc, create_security_groups, create_ec2_instances, create_aws_instances
+  tags: gather_default_vpc, create_security_groups, 
+        create_ec2_instances, create_aws_instances
 
 - name: Copy default VPC facts ------------
   copy:
@@ -46,7 +47,8 @@
       vpc-id: "{{ vpc_facts.vpcs[0].vpc_id }}"
   when: vpc_facts is success
   register: default_subnets
-  tags: gather_default_vpc, create_security_groups, create_ec2_instances, create_aws_instances
+  tags: gather_default_vpc, create_security_groups, 
+        create_ec2_instances, create_aws_instances
 
 - name: Copy default subnets facts --------
   copy:
