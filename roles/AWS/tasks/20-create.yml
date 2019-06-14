@@ -26,11 +26,20 @@
     name: "{{ item.name }}"
     state: "{{ item.state | default(omit) }}"
   loop: "{{ keyPairList }}"
-  notify: Copy EC2 Private Key
   when: keyPairList is defined
   register: keypair_registered
   tags: create_key_pairs, create_rds_instances,
         create_ec2_instances, create_aws_instances
+
+- name: Copy EC2 Private Key --------------
+  copy:
+    content: "{{ item.key.private_key }}"
+    dest: "{{ confdir }}/{{ item.key.name }}.pem"
+    mode: "0600"
+  loop: "{{ keypair_registered.results }}"
+  when: keypair_registered is success and item.key.private_key is defined
+  tags: create_key_pairs, create_rds_instance, 
+        create_ec2_instance, create_instance
 
 #############################
 # EC2 instances ('wait' = 'yes' to its completion)
@@ -65,13 +74,13 @@
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
     state: "{{ item.command }}"
-    publicly_accessible: "{{ item.pub_access | default(omit) }}"
     instance_type: "{{ item.type }}"
     db_name: "{{ item.db_name }}"
     db_instance_identifier: "{{ item.db_name }}"
     engine: "{{ item.engine }}"
     allocated_storage: "{{ item.storage | default(omit) }}"
     vpc_security_group_ids: "{{ created_sg | json_query(sg_id) }}"
+    publicly_accessible: "{{ item.publicly_accessible | default(omit) }}"
     username: "{{ item.username }}"
     password: "{{ item.password }}"
     tags: "{{ item.tags }}"
