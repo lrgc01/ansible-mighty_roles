@@ -45,6 +45,7 @@
      purge_networks: "{{ item.purge_networks | default(omit) }}"
      state: "{{ item.state | default('started') }}"
      networks_cli_compatible: true
+     env: "{{ item.env | default(omit) }}"
   loop: "{{ dockerContainerList }}"
   when: dockerContainerList is defined and item.enabled and docker_networks_created is success
   register: container_created
