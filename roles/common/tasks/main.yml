@@ -45,7 +45,7 @@
 - name: Update cache and upgrade (may take a time) --------
   apt: 
     update_cache: "yes"
-    upgrade: "{{ update_cache_y_n }}"
+    upgrade: "{{ update_cache_y_n | default(true) }}"
   when: apt_repos_done is changed
         and ansible_distribution == "Debian"
   register: updated_cache
