@@ -12,11 +12,10 @@ web_service             : "nginx"                                       # will b
 #
 # If a packet has a service associate it should be listed with srv, state and enabled.
 # enabled and state defaults to true and started respectively.
-dep_pkg_list		:
-   - false
+#dep_pkg_list :
 #   - { pkg : "{{ web_service }}" ,  srv : "{{ web_service }}" , state : "started" , enabled : true }
-#   - { pkg : "composer"		}
-#   - { pkg : "git"		}
+#   - { pkg : "composer"}
+#   - { pkg : "git"}
 #
 # dir, file, template or link, depending on key values
 #
@@ -52,7 +51,7 @@ ini_file_list           :
 #
 # Cron
 #
-cron_list	:
+cron_list:
    - false
 #   - { name: "Update domain" , minute: "*/5" , job: "~ubuntu/updatedns.sh"  , user: "ubuntu" , state: "present" }
 
