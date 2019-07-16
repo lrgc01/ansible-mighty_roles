@@ -5,7 +5,7 @@
 #
 drupaladm_user          : "drupaladm"
 siteadm_user            : "siteadm"
-git_user		: "git"
+git_user                : "git"
 # users to be created.
 # A later task will retrieve these keys asked to be created in here:
 users_list              :
@@ -13,7 +13,7 @@ users_list              :
    - { username : "{{ drupaladm_user }}" , comment : "Drupal admin user" , groups : "www-data" , sshkey: false }
    - { username : "{{ siteadm_user }}"   , comment : "Site admin user"   , groups : "www-data" , sshkey: false }
    - { username : "{{ git_user }}"       , comment : "Git user"          , groups : ""         , sshkey: true  }
-auth_keys_file_list	:
+auth_keys_file_list     :
    - false
-   - { username : "{{ git_user }}"	, pub_key_file : "conf.d/luiz_pub_key"		}
-   - { username : "{{ git_user }}"	, pub_key_file : "conf.d/luiz_newage1_pub_key"	}
+   - { username : "{{ git_user }}" , pub_key_file : "conf.d/luiz_pub_key" }
+   - { username : "{{ git_user }}" , pub_key_file : "conf.d/luiz_newage1_pub_key" }

@@ -1,0 +1,38 @@
+---
+# These servers might be kept in one server each 
+# or joined into one or two servers according to 
+# the project. Just change the inventory.
+- hosts: docker_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "luiz"
+  roles:
+    - common
+    - base
+    - users
+    - Docker
+    - gitcfg
+    - phpcfg
+    - finals
+
+- hosts: ha_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "luiz"
+  roles:
+   - common
+   - base
+   - users
+   - SSLcrt
+
+- hosts: db_servers
+  gather_facts: "{{ gather_y_n }}"
+  become: true
+  remote_user: "luiz"
+  roles:
+   - common
+   - base
+   - users
+   - DB_adm
+   - restore
+   - finals

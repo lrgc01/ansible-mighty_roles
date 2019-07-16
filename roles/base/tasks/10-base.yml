@@ -62,7 +62,7 @@
     name: "{{ item.item.srv }}"
     state: "restarted"    
     enabled: true
-  loop: "{{ templates_in_place.results }} + {{ files_uploaded.results }}"
+  loop: "{{ templates_in_place.results | default([]) }} + {{ files_uploaded.results | default([]) }}"
   when: (templates_in_place is changed or files_uploaded is changed) and item is changed and item.item.srv is defined
   tags: config_files, deploy_templates, copy_files
 
