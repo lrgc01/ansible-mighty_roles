@@ -61,7 +61,7 @@ backend letsencrypt-BE
 backend nginx
     balance     roundrobin
     redirect scheme https code 301 if !{ ssl_fc }
-{% for serverline in backend_servers_string_lines %}
+{% for serverline in item.backend_srv_lines %}
     {{ serverline }}
 {% endfor -%}
 

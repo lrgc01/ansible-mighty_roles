@@ -26,11 +26,6 @@ web_service             : "nginx"
 # haproxy
 web_proxy               : "haproxy"
 web_service_other       : "{{ web_proxy }}"
-backend_servers_string_lines : 
-   [ 
-      "server  srv1 127.0.0.1:8800 check" , 
-      "server  srv2 127.0.0.1:8880 check" , 
-   ]
 
 #
 # Will be used mainly with SSL certificate role
@@ -81,7 +76,18 @@ dep_pkg_list  :
 # srv is used to restart the service, if applicable, after a template is changed.
 dir_file_tmpl_list     :
    - { types : [ "dir" , "tmpl" ] , dest : "/etc/nginx/sites-available" , tmpl : "nginx-p8000.j2"   , name : "default"     , srv : "{{ web_service }}" }
-   - { types : [ "dir" , "tmpl" ] , dest : "/etc/haproxy"               , tmpl : "haproxy.cfg.j2"   , name : "haproxy.cfg" , srv : "{{ web_proxy }}" }
+   - { 
+       types : [ "dir" , "tmpl" ] , 
+       dest : "/etc/haproxy" , 
+       tmpl : "haproxy.cfg.j2",
+       name : "haproxy.cfg" , 
+       srv : "{{ web_proxy }}" 
+       backend_srv_lines : # used inside j2 template file
+          [ 
+             "server srv1 127.0.0.1:8800 check" , 
+             "server srv2 127.0.0.1:8880 check" , 
+          ]
+     }
    - { types : [ "link" ]         , src  : "/etc/nginx/sites-available/default" , dest : "/etc/nginx/sites-enabled/default" }
 
 # Define local and remote files both for upload (copy)
