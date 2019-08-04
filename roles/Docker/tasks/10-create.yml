@@ -11,6 +11,17 @@
 #    ##loop: "{{ ['networks'] | map('extract' , mylist ) | list }}"
 #  tags: my_debug
 
+- name: Preliminary scripts to run before start a container
+  shell: "{{ item.path }}/{{ item.name }}"
+  args:
+    chdir: "{{ item.path }}"
+    creates: "{{ item.creates }}"
+    warn: false
+  loop: "{{ docker_preconfig }}"
+  when: docker_preconfig is defined and item.run_shell is defined and item.run_shell
+  register: shell_backup_done
+  tags: config_files, deploy_templates, upload_files
+
 - name: Log into DockerHub --------------------------------
   docker_login:
      username: "{{ docker_username }}"
@@ -46,6 +57,7 @@
      state: "{{ item.state | default('started') }}"
      networks_cli_compatible: true
      env: "{{ item.env | default(omit) }}"
+     command: "{{ item.command | default(omit) }}"
   loop: "{{ dockerContainerList }}"
   when: dockerContainerList is defined and item.enabled and docker_networks_created is success
   register: container_created

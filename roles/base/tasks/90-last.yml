@@ -5,5 +5,5 @@
     state: "{{ item.state | default('started') }}" 
     enabled: "{{ item.enabled | default(true) }}"
   loop: "{{ dep_pkg_list }}"
-  when: dep_pkg_list[0] and item.srv is defined 
+  when: dep_pkg_list is defined and item.srv is defined 
   tags: install_dep_pkg

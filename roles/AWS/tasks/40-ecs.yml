@@ -1,0 +1,96 @@
+---
+- name: Create container repository (ECR) -
+  ecs_ecr:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ ecr_repo_list }}"
+  when: ecr_repo_list is defined
+  tags: create_ecr
+
+- name: ECS cluster create / destroy ----
+  ecs_cluster:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    delay: "{{ item.delay | default(omit) }}"
+  loop: "{{ ecs_cluster_definition }}"
+  when: ecs_cluster_definition is defined
+  register: ecs_cluster_defined
+  tags: ecs_cluster, ecs
+
+- name: ECS task definition ---------------
+  ecs_taskdefinition:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    containers: "{{ item.containers }}"
+    family: "{{ item.family | default(omit) }}"
+    task_role_arn: "{{ item.task_role_arn | default(omit) }}"
+    execution_role_arn: "{{ item.execution_role_arn | default(omit) }}"
+    state: "{{ item.state | default(omit)}}"
+    volumes: "{{ item.volumes | default(omit) }}"
+    revision: "{{ item.revision | default(omit) }}"
+    network_mode: "{{ item.network_mode | default(omit) }}"
+    launch_type: "{{ item.launch_type | default(omit) }}"
+    cpu: "{{ item.cpu | default(omit) }}"
+    memory: "{{ item.memory | default(omit) }}"
+    force_create: "{{ item.force_create | default(false) }}"
+  loop: "{{ ecs_task_definition }}"
+  when: ecs_task_definition is defined
+  register: ecs_task_defined
+  tags: ecs_task, ecs
+
+- name: ECS service create, destroy, ------
+  ecs_service:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    state: "{{ item.state }}"
+    name: "{{ item.name }}"
+    cluster: "{{ item.cluster }}"
+    client_token: "{{ item.client_token }}"
+    launch_type: "{{ item.launch_type | default(omit) }}"
+    force_new_deployment: "{{ item.force_new_deployment | default(false) }}"
+    task_definition: "{{ item.task_definition | default(omit) }}"
+    desired_count: "{{ item.desired_count | default(0) }}"
+    #network_configuration: "{{ item.network_configuration | default(omit) }}"
+    load_balancers: "{{ item.load_balancers | default(omit) }}"
+    network_configuration:
+      subnets: "{{ item.network_configuration.subnets | default(pick_subnet) }}"
+      security_groups: "{{ item.network_configuration.security_groups | default(omit) }}"
+      assign_public_ip: "{{ item.network_configuration.assign_public_ip | default(omit) }}"
+  loop: "{{ ecs_service_list }}"
+  when: default_subnets is success and ecs_service_list is defined
+  vars:
+    pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list }}"
+  register: ecs_services_created
+  tags: ecs_service, ecs
+
+- name: ECS task run, start, stop ---------
+  ecs_task:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    operation: "{{ item.operation }}"
+    cluster: "{{ item.cluster }}"
+    launch_type: "{{ item.launch_type | default(omit) }}"
+    task_definition: "{{ item.task_definition }}"
+    task: "{{ item.task | default(omit) }}"
+    count: "{{ item.count | default(1) }}"
+    network_configuration:
+      subnets: "{{ item.network_configuration.subnets | default(pick_subnet) }}"
+      security_groups: "{{ item.network_configuration.security_groups | default(omit) }}"
+      assign_public_ip: "{{ item.network_configuration.assign_public_ip | default(omit) }}"
+    started_by: "{{ item.started_by | default(omit) }}"
+  loop: "{{ ecs_task_list }}"
+  when: default_subnets is success and ecs_task_list is defined and item.enabled is defined and item.enabled 
+  vars:
+    pick_subnet: "{{ default_subnets.subnets|map(attribute='id') | list }}"
+  register: ecs_tasks_done
+  tags: ecs_task, ecs
+

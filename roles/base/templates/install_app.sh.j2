@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Create file to avoid new execution of install in Ansible shell module
+touch "{{ item.creates }}"
+
+WORKDIR="{{ item.appsrcdir }}"
+
+cd "$WORKDIR"
+
+SRC="{{ item.appsrcdir }}"
+BASEDIR="`basename $SRC`"
+BASEDATA="{{ item.appdata }}"
+WEBNAME="{{ item.webname }}"
+APINAME="{{ item.apiname }}"
+NODELIST="{{ item.nodelist }}"
+UID="{{ item.uid }}"
+GID="{{ item.gid }}"
+
+
+for node in $NODELIST
+do
+   NODEDIR="${BASEDATA}$node"
+   cd "$SRC/.."
+   # Prepare to copy/move
+   [ ! -d "$NODEDIR/new" ] && mkdir -p "$NODEDIR/new" 2>/dev/null
+   [ ! -d "$NODEDIR/old" ] && mkdir -p "$NODEDIR/old" 2>/dev/null
+   # Populate the new place
+   tar -cf - "$BASEDIR" | tar -xBf - -C "$NODEDIR/new"
+   # Clean old garbage
+   rm -fr $NODEDIR/old/* 2>/dev/null
+   # Save old workdir
+   mv -f "$NODEDIR/$BASEDIR" "$NODEDIR/old" 2>/dev/null
+   # Move new workdir to its place
+   mv -f "$NODEDIR/new/$BASEDIR" "$NODEDIR" 2>/dev/null
+   # Grant access
+   chown -R $UID:$GID "$NODEDIR/$BASEDIR"
+done
+
+

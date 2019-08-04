@@ -15,7 +15,7 @@ listAptRepos :
     }
 
 # Some very early pip python packs
-pip_install_list        : [ "docker" ]
+#pip_install_list        : [ "docker" ]
 
 #
 # List of containers to be created.

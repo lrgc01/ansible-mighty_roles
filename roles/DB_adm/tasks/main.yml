@@ -1,5 +1,5 @@
 ---
-- name: Create DBs on respective hosts --------------------
+- name: Create MySql DBs on respective hosts --------------
   mysql_db: 
     login_user: "{{ item.admuser }}"
     login_password: "{{ item.admpass }}"
@@ -7,22 +7,56 @@
     name: "{{ item.dbname }}"
     state: present
   loop: "{{ db_list }}"
-  when: item.dbcreate
-  register: databases_created 
+  when: item.dbcreate and ( item.dbtype == "mysql" or item.dbtype == "mariadb" )
+  register: mysql_databases_created 
   tags: databases, create_databases
 
-- name: Grant user privileges in DBs ----------------------
+- name: Grant user privileges in MySql DBs ----------------
   mysql_user:
     login_user: "{{ item.admuser }}"
     login_password: "{{ item.admpass }}"
     login_host: "{{ item.host }}"
     name: "{{ item.user }}"
     password: "{{ item.pass }}"
-    host: '%'
+    host: "{{ item.allowed_host | default('%') }}"
     priv: "{{ item.perms }}"
     state: present
     check_implicit_admin: true
     append_privs: "{{ item.append_privs }}"
   loop: "{{ db_list }}"
-  when: item.dbcreate and databases_created is success
+  when: item.dbcreate and mysql_databases_created is success
+        and ( item.dbtype == "mysql" or item.dbtype == "mariadb" )
+  register: mysql_privileges_set 
   tags: databases, grant_privileges
+
+- name: Create Postgresql DBs on respective hosts ---------
+  postgresql_db: 
+    login_user: "{{ item.admuser }}"
+    login_password: "{{ item.admpass }}"
+    login_host: "{{ item.host }}"
+    name: "{{ item.dbname }}"
+    owner: "{{ item.owner | default(omit) }}"
+    state: present
+  loop: "{{ db_list }}"
+  when: item.dbcreate is defined and item.dbcreate
+        and ( item.dbtype == "postgresql" or item.dbtype == "postgres" )
+  register: postgresql_databases_created 
+  tags: databases, create_databases
+
+- name: Grant user privileges in Postgresql DBs -----------
+  postgresql_user:
+    login_user: "{{ item.admuser }}"
+    login_password: "{{ item.admpass }}"
+    login_host: "{{ item.host }}"
+    login_db: "{{ item.dbname }}"
+    name: "{{ item.user }}"
+    password: "{{ item.pass }}"
+    priv: "{{ item.perms }}"
+    state: present
+  loop: "{{ db_list }}"
+  when: item.dbcreate is defined and item.dbcreate 
+        and postgresql_databases_created is success
+        and ( item.dbtype == "postgresql" or item.dbtype == "postgres" )
+  register: postgresql_privileges_set 
+  tags: databases, grant_privileges
+

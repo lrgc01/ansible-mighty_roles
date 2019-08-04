@@ -1,0 +1,50 @@
+#!/bin/sh
+
+if [ "$1" != "" ] ; then
+   DRIFT="$1"
+else
+   DRIFT="{{ item.time_backwards }}"
+fi
+
+WORKDIR="{{ item.appsrcdir }}"
+
+cd "$WORKDIR"
+
+NEW_DATE=`date +%s --date="$DRIFT"`
+LAST_COMMIT=`git rev-list --date-order --abbrev-commit --timestamp HEAD| head -1 | awk '{print $1}' `
+
+SRC="{{ item.appsrcdir }}"
+BASEDIR="`basename $SRC`"
+BASEDATA="{{ item.appdata }}"
+WEBNAME="{{ item.webname }}"
+APINAME="{{ item.apiname }}"
+NODELIST="{{ item.nodelist }}"
+UID="{{ item.uid }}"
+GID="{{ item.gid }}"
+
+if [ "$NEW_DATE" -lt "$LAST_COMMIT" ] ; then
+   for node in $NODELIST
+   do
+      NODEDIR="${BASEDATA}$node"
+      cd "$SRC/.."
+      # Prepare to copy/move
+      [ ! -d "$NODEDIR/new" ] && mkdir -p "$NODEDIR/new" 2>/dev/null
+      [ ! -d "$NODEDIR/old" ] && mkdir -p "$NODEDIR/old" 2>/dev/null
+      # Populate the new place
+      tar -cf - "$BASEDIR" | tar -xBf - -C "$NODEDIR/new"
+      # Clean old garbage
+      rm -fr $NODEDIR/old/* 2>/dev/null
+      # Save old workdir
+      mv -f "$NODEDIR/$BASEDIR" "$NODEDIR/old" 2>/dev/null
+      # Move new workdir to its place
+      mv -f "$NODEDIR/new/$BASEDIR" "$NODEDIR" 2>/dev/null
+      # Put a mark on it
+      echo "$LAST_COMMIT" > "$NODEDIR/$BASEDIR/last_commit.timestamp"
+      # Grant access
+      chown -R $UID:$GID "$NODEDIR/$BASEDIR"
+      # Restart containers
+      docker stop "${WEBNAME}$node" "${APINAME}$node"
+      docker start "${APINAME}$node" "${WEBNAME}$node"
+   done
+fi
+

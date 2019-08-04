@@ -1,0 +1,10 @@
+#!/bin/sh
+
+export DB="{{ item.db_type }}://{{ item.db_user }}:{{ item.db_pass }}@${{ item.link_alias }}_PORT_5432_TCP_ADDR/{{ item.db_name }}"
+export API_HOST="http://${{ item.link_alias }}_PORT_3000_TCP_ADDR:3000"
+export PORT={{ item.port }}
+
+cd "{{ item.workdir }}"
+npm install
+npm start
+

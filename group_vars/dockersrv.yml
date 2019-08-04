@@ -1,0 +1,359 @@
+---
+###########################################
+#
+# Generic block variable definition - used in any roles
+#
+# Some variables to be used worldwide
+#
+remote_user: "luiz"   # username to connect to the remote server
+confdir : "conf.d"
+
+install_done : "install_done"
+
+# Some Docker definitions
+dockername_nginx          : "nginx"
+dockername_nginx2         : "nginx2"
+dockername_node_api       : "nodeapi"
+dockername_node_api_alias : "API"
+dockername_node_web       : "nodeweb"
+dockername_db             : "db1"
+dockername_db_alias       : "DB"
+docker_uid                : "1000"
+docker_gid                : "1000"
+
+# For the node app / web dockers
+app_home           : "/home/app"
+dockerVol_appData  : "{{ app_home }}/data"  # which is seen inside containers
+dockerVol_appDataA : "{{ app_home }}/dataA" 
+dockerVol_appDataB : "{{ app_home }}/dataB"
+dockerVol_appStart : "{{ app_home }}/Start"
+basename_workdir   : "node-3tier-app"
+node_workdir       : "{{ dockerVol_appData }}/{{ basename_workdir }}"
+node_start_dir     : "{{ dockerVol_appStart }}/node.start"
+# git module stuff
+git_workdir        : "{{ app_home }}/{{ basename_workdir }}"
+git_base_dir       : "/var/git"
+git_separate_dir   : "{{ git_base_dir }}/{{ basename_workdir }}.git"
+sys_username       : "luiz"
+github_source_repo : "git@git.toptal.com:screening/luiz-rogerio-goncalves-de-carvalho.git"
+git_branch         : "stable"
+ssh_dir            : "/home/{{ remote_user }}/.ssh"
+ssh_key_file       : "{{ ssh_dir }}/id_sys"
+#ssh_opts           : "-o IdentityFile={{ ssh_key_file }}"
+
+# haproxy
+web_proxy               : "haproxy"
+
+# Database
+db_type    : "postgres" 
+db_user    : "toptalapi" 
+db_pass    : "test1234" 
+db_name    : "apitest" 
+db_host    : "localhost" 
+db_admuser : "docker"
+db_admpass : "docker"
+
+#--- End of generic block
+
+###########################################
+#
+# Common role block variable definition
+#
+# We need git installed first (or before template deployment - see install shell script below)
+#base_dep_pkg_list:
+#   - { pkg : "git"  }
+
+pip_install_list        : [ "docker" , "psycopg2-binary" , ]
+
+#--- End of generic block
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list :
+   - { pkg : "git"  }
+   - { pkg : "containerd.io"   }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "docker-ce"       , srv : "docker"          , state : "started" , enabled : true }
+   - { pkg : "{{ web_proxy }}" , srv : "{{ web_proxy }}" , state : "started" , enabled : true }
+
+#
+### dir, file, template or link, depending on key values
+###
+### Will be used in template and file modules to create, delete and link.
+###
+### This dir_file_tmpl_list dict list var will be used in some different tasks, one of
+### each type: 
+#      - tmpl, dir, file link, file removal (absent) and copy (up/down).
+#       (each item of the list may be one of them)
+###    - state = "link" uses src and dest: ln -s src dest (force=yes => ln -s -f).
+###    - state = "tmpl" uses tmpl, name and dest: tmpl -> dest/name.
+###    - state = "absent" uses dest to remove the inode.
+###    - state = "upload"/"download" uses 'copy' Ansible module to upload/download a file
+### Note that the same list element may be used to create a directory if not existing.
+###    - When "dir" is true create a directory using dest.
+#
+### "srv" is used to restart the service, if applicable, after a template or file is changed.
+##
+##*** Templates usually have many inline variables to substitute in their .j2 source files.
+#
+dir_file_tmpl_list  :
+        # Note: The DB host will be defined by IP in the start script inside container 
+   - { 
+        state      : "tmpl" , 
+        dir        : true ,
+        dest       : "{{ node_start_dir }}" , 
+        tmpl       : "start-script.sh.j2" , 
+        name       : "start.api.sh" , 
+        mode       : "755" ,
+        db_type    : "{{ db_type }}" ,          # below here are the free form variables expected inside the .j2 template
+        db_user    : "{{ db_user }}" ,
+        db_pass    : "{{ db_pass }}" ,
+        db_name    : "{{ db_name }}" ,
+        db_host    : "{{ db_host }}" ,
+        link_alias : "{{ dockername_db_alias }}" ,
+        workdir    : "{{ node_workdir }}/api" ,
+        port       : "3000" ,
+     }
+   - { 
+        state      : "tmpl" , 
+        dir        : true ,
+        dest       : "{{ node_start_dir }}" , 
+        tmpl       : "start-script.sh.j2" , 
+        name       : "start.web.sh" , 
+        mode       : "755" ,
+        db_type    : "none" ,          # below here are the free form variables expected inside the .j2 template
+        db_user    : "none" ,
+        db_pass    : "none" ,
+        db_name    : "none" ,
+        db_host    : "none" ,
+        link_alias : "{{ dockername_node_api_alias }}" ,
+        workdir    : "{{ node_workdir }}/web" ,
+        port       : "8000" ,
+     }
+   - { 
+        state      : "tmpl" , 
+        dir        : true ,
+        dest       : "{{ app_home }}" , 
+        tmpl       : "update_app.sh.j2" , 
+        name       : "update_app.sh" , 
+        mode       : "755" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+        appsrcdir        : "{{ git_workdir }}" , # below here are the free form variables expected inside the .j2 template
+        time_backwards   : "-2 hours" ,
+        appdata          : "{{ dockerVol_appData }}" ,
+        webname          : "{{ dockername_node_web }}" ,
+        apiname          : "{{ dockername_node_api }}" ,
+        nodelist         : "A B" ,
+        uid              : "{{ docker_uid }}" ,
+        gid              : "{{ docker_gid }}" ,
+     }
+   - { 
+        state      : "tmpl" , 
+        dir        : true ,
+        dest       : "{{ app_home }}" , 
+        tmpl       : "install_app.sh.j2" , 
+        name       : "install_app.sh" , 
+        mode       : "755" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+        creates          : "{{ install_done }}" , # below here are the free form variables expected inside the .j2 template
+        appsrcdir        : "{{ git_workdir }}" , 
+        appdata          : "{{ dockerVol_appData }}" ,
+        webname          : "{{ dockername_node_web }}" ,
+        apiname          : "{{ dockername_node_api }}" ,
+        nodelist         : "A B" ,
+        uid              : "{{ docker_uid }}" ,
+        gid              : "{{ docker_gid }}" ,
+     }
+   - {
+        dir        : true ,
+        dest       : "{{ git_base_dir }}" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+     }
+   - {
+        dir        : true ,
+        dest       : "{{ ssh_dir }}" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+     }
+   - {
+        state      : "upload" , 
+        dest       : "{{ ssh_key_file }}" ,
+        src        : "{{ confdir }}/id_sys" ,
+        mode       : "go-rwx" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+     }
+   - {
+        state      : "upload" , 
+        dest       : "{{ ssh_key_file }}.pub" ,
+        src        : "{{ confdir }}/id_sys.pub" ,
+        owner      : "{{ remote_user }}",
+        group      : "{{ remote_user }}",
+     }
+   - { 
+        state : "tmpl" , 
+        dest  : "/etc/haproxy" , 
+        tmpl : "haproxy.cfg.j2",
+        name : "haproxy.cfg" , 
+        srv : "{{ web_proxy }}" ,
+        backend_srv_lines : # used inside j2 template file
+          [ 
+             "server srv1 127.0.0.1:8000 check" , 
+             "server srv2 127.0.0.1:8001 check" , 
+          ] ,
+     }
+
+cron_list  :
+   - { 
+        name: "Update source in {{ node_workdir }}" , 
+        minute: "*/5" , 
+        job: "git --git-dir={{ git_separate_dir }} --work-tree={{ git_workdir }} pull --quiet"  , 
+        user: "{{ sys_username }}" , 
+        state: "absent" 
+     }
+
+#--- End of base role block
+
+###########################################
+#
+# gitcfg role block
+#
+gitCloneList :
+   - {  
+        repo          : "{{ github_source_repo }}" ,
+        dest          : "{{ git_workdir }}" ,
+        gitDir        : "{{ git_separate_dir }}" ,
+        update_y_n    : false ,
+        clone_y_n     : true,
+        branch        : "{{ git_branch }}" ,
+        accept_hostkey: true ,
+        key_file      : "{{ ssh_key_file }}" ,
+        become        : false ,      # The git module doesn't change owner - ensure the login user is the one we want (see cron)
+     }
+#
+#--- End of gitcfg role block
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'networks', all others may be omitted:
+#    networks (for now networks must be defined - or use 'bridge')
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+docker_preconfig :
+  - {
+        run_shell  : true ,
+        path       : "{{ app_home }}" , 
+        name       : "install_app.sh" , 
+        creates    : "{{ install_done }}" ,
+    }
+dockerContainerList :
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_db }}" ,
+        image           : "lrgc01/postgresql-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "pg_data:/var/lib/postgresql", "pg_etc:/etc/postgresql", "pg_log:/var/log/postgresql", ] ,
+        published_ports : [ "0.0.0.0:5432:5432", ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_node_api }}A" ,
+        image           : "lrgc01/nodejs" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        links           : [ "{{ dockername_db }}:{{ dockername_db_alias }}" , ] ,
+        volumes         : [ "{{ dockerVol_appData }}A:{{ dockerVol_appData }}" , "{{ dockerVol_appStart }}:{{ dockerVol_appStart }}" , ] ,
+        command         : "{{ node_start_dir }}/start.api.sh" ,
+        published_ports : [ "0.0.0.0:3000:3000", ] , 
+        user            : "{{ docker_uid }}:{{ docker_gid }}" ,
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_node_web }}A" ,
+        image           : "lrgc01/nodejs" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        links           : [ "{{ dockername_node_api }}A:{{ dockername_node_api_alias }}" , ] ,
+        volumes         : [ "{{ dockerVol_appData }}A:{{ dockerVol_appData }}" , "{{ dockerVol_appStart }}:{{ dockerVol_appStart }}" , ] ,
+        command         : "{{ node_start_dir }}/start.web.sh" ,
+        published_ports : [ "0.0.0.0:8000:8000", ] , 
+        user            : "{{ docker_uid }}:{{ docker_gid }}" ,
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_node_api }}B" ,
+        image           : "lrgc01/nodejs" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        links           : [ "{{ dockername_db }}:{{ dockername_db_alias }}" , ] ,
+        volumes         : [ "{{ dockerVol_appData }}B:{{ dockerVol_appData }}" , "{{ dockerVol_appStart }}:{{ dockerVol_appStart }}" , ] ,
+        command         : "{{ node_start_dir }}/start.api.sh" ,
+        published_ports : [ "0.0.0.0:3001:3000", ] , 
+        user            : "{{ docker_uid }}:{{ docker_gid }}" ,
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_node_web }}B" ,
+        image           : "lrgc01/nodejs" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        links           : [ "{{ dockername_node_api }}B:{{ dockername_node_api_alias }}" , ] ,
+        volumes         : [ "{{ dockerVol_appData }}B:{{ dockerVol_appData }}" , "{{ dockerVol_appStart }}:{{ dockerVol_appStart }}" , ] ,
+        command         : "{{ node_start_dir }}/start.web.sh" ,
+        published_ports : [ "0.0.0.0:8001:8000", ] , 
+        user            : "{{ docker_uid }}:{{ docker_gid }}" ,
+        state           : "started" ,
+    }
+#
+#--- End of Docker role block
+
+###########################################
+#
+# DB_adm role block
+#
+db_list              :
+   -  {
+        dbcreate     : true ,
+        drop         : false ,
+        dbtype       : "{{ db_type }}" ,
+        admuser      : "{{ db_admuser }}", 
+        admpass      : "{{ db_admpass }}" ,
+        host         : "{{ db_host }}",
+        user         : "{{ db_user }}" ,
+        pass         : "{{ db_pass }}" ,
+        dbname       : "{{ db_name }}" ,
+        #owner        : "{{ db_user }}" ,
+        perms        : "ALL",
+      }
+
+#--- End of db_adm role block
