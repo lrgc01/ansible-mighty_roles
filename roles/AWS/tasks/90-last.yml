@@ -76,11 +76,11 @@
 
 - name: Copy CFN filesystems facts --------
   copy:
-    #content: "{{ item | to_nice_json }}"
-    content: "{{ cfn_facts.ansible_facts.cloudfront | to_nice_json }}"
-    #dest: "{{ facts_out_dir }}/cfn-{{ item.Id }}.json"
-    dest: "{{ facts_out_dir }}/cfn-all.json"
-  #loop: "{{ cfn_facts.ansible_facts.cloudfront.summary.distributions }}"
+    content: "{{ item | to_nice_json }}"
+    #content: "{{ cfn_facts.ansible_facts.cloudfront | to_nice_json }}"
+    dest: "{{ facts_out_dir }}/cfn-{{ item.Id }}.json"
+    #dest: "{{ facts_out_dir }}/cfn-all.json"
+  loop: "{{ cfn_facts.ansible_facts.cloudfront.summary.distributions }}"
   when: cfn_facts is success
   tags: gather_cfn, change_state_all_instances, create_cfn_instances, create_aws_instances
 
@@ -113,4 +113,36 @@
   loop: "{{ myTemplates }}"
   when: ec2_facts is success and myTemplates is defined
   tags: config_files, config_ansible_host_file
+
+- name: Gather APPL Load Balancer instances
+  elb_application_lb_facts:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region | default(omit) }}"
+  register: elb_app_lb_facts
+  tags: gather_elb
+
+- name: Copy ELB APPL LB facts ------------
+  copy:
+    content: "{{ item | to_nice_json }}"
+    dest: "{{ facts_out_dir }}/elb-alb-{{ item.load_balancer_name }}.json"
+  loop: "{{ elb_app_lb_facts.load_balancers }}"
+  when: elb_app_lb_facts is success and output_dir_ready is success 
+  tags: gather_elb
+
+- name: Gather ELB Target Group instances -
+  elb_target_group_facts:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region | default(omit) }}"
+  register: elb_tg_facts
+  tags: gather_elb
+
+- name: Copy ELB Target Group facts -------
+  copy:
+    content: "{{ item | to_nice_json }}"
+    dest: "{{ facts_out_dir }}/elb-tg-{{ item.target_group_name }}.json"
+  loop: "{{ elb_tg_facts.target_groups }}"
+  when: elb_tg_facts is success and output_dir_ready is success 
+  tags: gather_elb
 

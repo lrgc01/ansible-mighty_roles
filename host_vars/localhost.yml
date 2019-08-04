@@ -1,0 +1,436 @@
+---
+# General
+region             : "us-east-2"
+vpc_id             : ""
+basedir            : "."
+# local output dirs
+confdir            : "{{ basedir }}/conf.d"
+sshconf            : "{{ confdir }}/ssh_config"
+facts_out_dir      : "{{ basedir }}/facts.d"
+# AWS ini $HOME file configuration
+#
+awsHomeDir         : "~/.aws"
+awsIniPairs        :
+   - {
+       file : "{{ awsHomeDir }}/config" ,
+       section : "default" ,
+       option : "region" ,
+       value : "{{ region }}"
+     }
+# Directory creation list - there is a task ('file') to build the
+# basic output/config tree locally.
+out_dirs              : [ "{{ confdir }}", "{{ facts_out_dir }}" , "{{ awsHomeDir }}" ]
+# And how to write some configs
+myTemplates           :
+   - {
+       src  : "host_inventory.j2",
+       dest : "{{ basedir }}/hosts"
+     }
+   - {
+       src  : "ssh_config.j2",
+       dest : "{{ sshconf }}"
+     }
+
+# Used along with other definitions
+instance_count     : "0"
+change_service     : true
+#
+# Security Groups
+SgName             : "container-sg"
+dbSgName           : "database-sg"
+# subnet, VPC, NAT, gateway - take a look at Amazon console for their defaults (added one more subnet) and choose.
+priv_subnet1       : "subnet-20f1615a"
+pub_subnet1        : "subnet-56e4bf3e"
+priv_subnet2       : "subnet-761fe73a"
+pub_subnet2        : "subnet-048f2b49b34873921"
+# ECS stuffs
+apiContainerName   : "api"
+webContainerName   : "web"
+apiCluster         : "apiCluster"
+webCluster         : "webCluster"
+apiTaskDefName     : "apiTaskDef" 
+webTaskDefName     : "webTaskDef" 
+apiService         : "apiServiceTier"
+webService         : "webServiceTier"
+apiPort            : "3000"
+webPort            : "8000"
+apiRevision        : "1"
+webRevision        : "1"
+launch_type        : "FARGATE"
+task_role_arn      : "arn:aws:iam::439356976537:role/ecsTaskExecutionRole"  # another that comes with AWS defaults
+network_mode       : "awsvpc"
+priv_network_config:
+  {
+    assign_public_ip: false ,
+    security_groups : [ "{{ SgName }}" , ] ,
+    subnets         : [ "{{ priv_subnet1 }}" , "{{ priv_subnet2 }}" , ] , 
+  }
+pub_network_config :
+  {
+    assign_public_ip: true ,
+    security_groups : [ "{{ SgName }}" , ] ,
+    subnets         : [ "{{ pub_subnet1 }}" , "{{ pub_subnet2 }}" , ] , 
+  }
+
+# ELB stuffs
+apiTGName          : "{{ apiCluster }}"
+webTGName          : "{{ webCluster }}"
+## These below have to be retrieved from facts.d/*.json after first run of LB/TG and CFN
+apiTGArn           : "arn:aws:elasticloadbalancing:us-east-2:439356976537:targetgroup/apiCluster/f1eed8678572dd57"
+webTGArn           : "arn:aws:elasticloadbalancing:us-east-2:439356976537:targetgroup/webCluster/f87150a27f90292b"
+apiLBDnsName       : "internal-apiLB-960376634.us-east-2.elb.amazonaws.com"
+webLBDnsName       : "webLB-44977914.us-east-2.elb.amazonaws.com"
+cfn_domain1        : "{{ webLBDnsName }}"
+
+# EC2 stuffs - used onle as testing purposes
+srvInstanceType       : "t2.micro"
+testKey               : "ECS-Test-key"
+
+# DB configs
+db_type      : "postgres" 
+db_user      : "toptalapi" 
+db_pass      : "test1234" 
+db_name      : "apitest" 
+db_host      : "node3tier.ctxnidj2utoz.us-east-2.rds.amazonaws.com" 
+dbInstanceName : "node3tier"
+# the whole DB variable to pass to the API container
+DB : "{{ db_type }}://{{ db_user }}:{{ db_pass }}@{{ db_host }}/{{ db_name }}"
+# the API_HOST variable to pass to the WEB container
+API_HOST     : "http://{{ apiLBDnsName }}:{{ apiPort }}"
+
+securityGroupList   :
+   - {
+       name        : "{{ SgName }}",
+       state       : "present" ,
+       description : "ECS container SG",
+       rules       :  [
+                       { proto: "tcp",  
+                         ports: "22001",  
+                         cidr_ip: "0.0.0.0/0" } ,
+                       { proto: "tcp",  
+                         ports: "22",  
+                         cidr_ip: "0.0.0.0/0" } ,
+                       { proto: "tcp",  
+                         ports: "80",  
+                         cidr_ip: "0.0.0.0/0" } ,
+                       { proto: "tcp",  
+                         ports: "{{ webPort }}",
+                         cidr_ip: "0.0.0.0/0" } ,
+                       { proto: "tcp",  
+                         ports: "{{ apiPort }}",  
+                         cidr_ip: "172.16.0.0/12" } ,
+                      ] ,
+     }
+   - {
+       name        : "{{ dbSgName }}",
+       state       : "present" ,
+       description : "DB sec group",
+       rules       :  [
+                       { proto: "tcp",  
+                         ports: "5432",  
+                         cidr_ip: "172.16.0.0/12" , } ,
+                       { proto: "tcp",  
+                         ports: "3306",  
+                         cidr_ip: "172.16.0.0/12" , } ,
+                      ] ,
+     }
+
+keyPairList      : # To EC2
+   - {
+       name        : "{{ testKey }}" ,
+       state       : "present"
+     }
+
+ec2Instances     : # Used only as testing purposes
+   - {
+       tags      : { Name : "server1" , Group : "webservers" },
+       wait      : false ,
+       state     : "stopped",
+       term_prot : false ,
+       SG_name   : [ "default" , "{{ SgName }}" ],
+       type      : "{{ srvInstanceType }}",
+       image     : "ami-067e80109aff3e2c2", # Debian stretch
+       key_name  : "{{ testKey }}" ,
+       subnet_id : "{{ pub_subnet1 }}" ,
+     }
+rdsInstancesByName   :
+   - {
+       state     : "present" ,
+       wait      : "true" ,
+       publicly_accessible: false ,
+       tags      : { Environment: "testing",  Application: "node3tier" },
+       type      : "db.t2.micro",
+       db_name   : "{{ db_name }}",
+       instance  : "{{ dbInstanceName }}",
+       engine    : "{{ db_type }}",
+       storage   : "20",
+       sg_name   : "{{ dbSgName }}",
+       username  : "{{ db_user }}",
+       password  : "{{ db_pass }}" ,
+       backup_retention_period: "1" ,
+       preferred_backup_window: "01:40-02:30" ,
+       enable_performance_insights: true ,
+       cloudwatch_logs_exports: [ "postgresql", ] ,
+       #monitoring_interval: "60" ,
+       #monitoring_role_arn: "arn:aws:iam::439356976537:role/rds-monitoring-role" ,
+     }
+     
+# Docker images repo
+ecr_repo_list: 
+  - {
+       name  : "uwsgi-stretch_slim" , 
+       state : "absent" ,
+    }
+  - {
+       name  : "python_dev-stretch_slim", 
+       state : "absent" ,
+    }
+  - {
+       name  : "nodejs-stretch_slim", 
+       state : "absent" ,
+    }
+  - {
+       name  : "node3tier", 
+       state : "absent" ,
+    }
+
+# Load balancers and target groups
+targetGroupList :
+  - {
+       name     : "{{ apiTGName }}" ,
+       state    : "absent" ,
+       proto    : "HTTP" ,
+       type     : "ip" ,
+       port     : "{{ apiPort }}" ,
+       HChkPath : "/api/status" ,  # this is NOT working - have to be changed in AWS console
+       modify_targets : false ,
+    }
+  - {
+       name     : "{{ webTGName }}" ,
+       state    : "absent" ,
+       proto    : "HTTP" ,
+       type     : "ip" ,
+       port     : "{{ webPort }}" ,
+       HChkPath : "/" ,
+       modify_targets : false ,
+    }
+
+loadBalancerList :
+  - {
+       name     : "apiLB" ,
+       state    : "absent" ,
+       secGroups: [ "{{ SgName }}" , ] ,
+       subnets  : [ "{{ priv_subnet1 }}" , "{{ priv_subnet2 }}" ,] ,
+       scheme   : "internal" ,
+       listeners: 
+         [
+           {
+               Protocol: "HTTP" , 
+               Port    : "{{ apiPort }}" ,
+               DefaultActions: 
+                 [ 
+                    { Type: "forward" , TargetGroupName: "{{ apiTGName }}" , } ,
+                 ] ,
+           } ,
+         ] ,
+    }
+  - {
+       name     : "webLB" ,
+       state    : "absent" ,
+       secGroups: [ "{{ SgName }}" , ] ,
+       subnets  : [ "{{ pub_subnet1 }}" , "{{ pub_subnet2 }}" ,] ,
+       scheme   : "internet-facing" ,
+       listeners: 
+         [
+           {
+               Protocol: "HTTP" , 
+               Port    : "{{ webPort }}" ,
+               DefaultActions: 
+                 [ 
+                    { Type: "forward" , TargetGroupName: "{{ webTGName }}" , } ,
+                 ] ,
+           } ,
+         ] ,
+       access_logs_enabled: true ,
+       access_logs_s3_bucket: "node3tier-weblogs",
+       access_logs_s3_prefix: "web",
+    }
+
+# ECS task def, cluster and services
+ecs_task_definition :
+  - {
+       family : "{{ apiTaskDefName }}" , 
+       state : "absent" , 
+       volumes: [ name : "home_vol" , ] , 
+       revision: "{{ apiRevision }}" ,
+       network_mode: "{{ network_mode }}" ,
+       compatibilities: [ "{{ launch_type }}" , ] ,
+       launch_type: "{{ launch_type }}" ,
+       force_create: false ,
+       cpu: "256" ,
+       memory: "512" ,
+       task_role_arn : "{{ task_role_arn }}" ,
+       execution_role_arn : "{{ task_role_arn }}" ,
+       containers :
+         [
+           {
+              name : "{{ apiContainerName }}" ,
+              cpu : "2" ,
+              memory : "512" ,
+              image : "439356976537.dkr.ecr.us-east-2.amazonaws.com/node3tier" ,
+              environment : [
+                #{ name : "link_alias" , value : "DB" } ,
+                { name : "db_type" , value : "{{ db_type }}" } ,
+                { name : "db_user" , value : "{{ db_user }}" } ,
+                { name : "db_pass" , value : "{{ db_pass }}" } ,
+                { name : "db_name" , value : "{{ db_name }}" } ,
+                { name : "db_host" , value : "{{ db_host }}" } ,
+                { name : "DB"      , value : "{{ DB }}" } ,
+              ] ,
+              command : [ "sh" , "/home/node/nodejs.sh" , "api" ] ,
+              mountPoints : 
+                [ 
+                  { containerPath : "/home/node" , sourceVolume : "home_vol" , } , 
+                ] ,
+              portMappings : 
+                [ 
+                  { containerPort : "{{ apiPort }}" , hostPort : "{{ apiPort }}" , } ,
+                  { containerPort : "22" , hostPort : "22" , } , 
+                ] ,
+              logConfiguration :
+                {
+                   logDriver : "awslogs" ,
+                   options : 
+                     {
+                        awslogs-group: "/ecs/{{ apiCluster }}-taskLogs" ,
+                        awslogs-region: "{{ region }}" ,
+                        awslogs-stream-prefix: "ecs" ,
+                     } ,
+                 } ,
+           } ,
+         ] ,
+     }
+  - {
+       family : "{{ webTaskDefName }}" , 
+       state : "absent" , 
+       volumes: [ name : "home_vol" , ] , 
+       revision: "{{ webRevision }}" ,
+       network_mode: "{{ network_mode }}" ,
+       compatibilities: [ "{{ launch_type }}" , ] ,
+       launch_type: "{{ launch_type }}" ,
+       force_create: false ,
+       cpu: "256" ,
+       memory: "512" ,
+       task_role_arn : "{{ task_role_arn }}" ,
+       execution_role_arn : "{{ task_role_arn }}" ,
+       containers :
+         [
+           {
+              name : "{{ webContainerName }}" ,
+              cpu : "2" ,
+              memory : "512" ,
+              image : "439356976537.dkr.ecr.us-east-2.amazonaws.com/node3tier" ,
+              environment : [
+                { name : "API_HOST" , value : "{{ API_HOST }}" } ,
+              ] ,
+              command : [ "sh" , "/home/node/nodejs.sh" , "web" ] ,
+              mountPoints : 
+                [ 
+                  { containerPath : "/home/node" , sourceVolume : "home_vol" , } , 
+                ] ,
+              portMappings : 
+                [ 
+                  { containerPort : "{{ webPort }}" , hostPort : "{{ webPort }}" , } ,
+                  { containerPort : "22" , hostPort : "22" , } , 
+                ] ,
+              logConfiguration :
+                {
+                   logDriver : "awslogs" ,
+                   options : 
+                     {
+                        awslogs-group: "/ecs/{{ webCluster }}-taskLogs" ,
+                        awslogs-region: "{{ region }}" ,
+                        awslogs-stream-prefix: "ecs" ,
+                     } ,
+                 } ,
+           } ,
+         ] ,
+     }
+
+ecs_cluster_definition :
+  - {
+       name: "{{ apiCluster }}" ,
+       state: "absent" ,
+    }
+  - {
+       name: "{{ webCluster }}" ,
+       state: "absent" ,
+    }
+
+# To delete, first change desired_count to 0 then state to absent (two run)
+# client_token is an idempotency string up to 32 chars
+ecs_service_list : 
+  - {
+       state: "absent" ,
+       name: "{{ apiService }}" ,
+       force_new_deployment: "{{ change_service }}" ,
+       cluster : "{{ apiCluster }}" , 
+       client_token : "{{ apiCluster }}_service" ,
+       task_definition : "{{ apiTaskDefName }}" , 
+       launch_type : "{{ launch_type }}" ,
+       network_configuration: "{{ priv_network_config }}",
+       load_balancers: 
+         [ 
+           { containerName : "{{ apiContainerName }}" , containerPort : "{{ apiPort }}" , targetGroupArn : "{{ apiTGArn }}" , } , 
+         ] ,
+       desired_count: "{{ instance_count }}" ,
+    }
+  - {
+       state: "absent" ,
+       name: "{{ webService }}" ,
+       force_new_deployment: "{{ change_service }}" ,
+       cluster : "{{ webCluster }}" , 
+       client_token : "{{ webCluster }}_service" ,
+       task_definition : "{{ webTaskDefName }}" , 
+       launch_type : "{{ launch_type }}" ,
+       network_configuration: "{{ pub_network_config }}",
+       load_balancers: 
+         [ 
+           { containerName : "{{ webContainerName }}" , containerPort : "{{ webPort }}" , targetGroupArn : "{{ webTGArn }}" , } , 
+         ] ,
+       desired_count: "{{ instance_count }}" ,
+    }
+
+# INACTIVE
+ecs_task_list :
+  - {  
+       enabled: false ,
+       operation : "run" , 
+       cluster : "{{ apiCluster }}" , 
+       task_definition : "{{ apiTaskDefName }}" , 
+       launch_type : "{{ launch_type }}" ,
+       network_configuration: "{{ priv_network_config }}",
+       count : 1 , 
+       started_by: "ansible_user" ,
+    }
+
+# CloudFront instances (CFN)
+cloudfrontInstances :
+   - { 
+       enabled         : false ,
+       state           : "absent" ,
+       #defOrigDomName  : "{{ cfn_domain1 }}" ,
+       origins         :
+         [
+            { 
+              id : "{{ webContainerName }}_CF_id" , 
+              domain_name : "{{ cfn_domain1 }}" , 
+              custom_origin_config : { http_port : 8000 , } , 
+            } ,
+         ] ,
+       #caller_reference: "20190730{{ cfn_domain1 }}" ,
+       #origin_id       : "20190730{{ cfn_domain1 }}" ,
+       tags            : { Name: "CF for domain {{ cfn_domain1 }}" , Group: "webservers" , Project: "Toptal project" } ,
+       wait            : false ,
+     }
+

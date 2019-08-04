@@ -66,3 +66,14 @@
   when: (templates_in_place is changed or files_uploaded is changed) and item is changed and item.item.srv is defined
   tags: config_files, deploy_templates, upload_files
 
+- name: Run shell if pointed out by tmpl of file tasks ----
+  shell: "{{ item.item.dest }}/{{ item.item.name }}"
+  args:
+    chdir: "{{ item.item.dest }}"
+    creates: "{{ item.item.creates }}"
+    warn: false
+  loop: "{{ templates_in_place.results | default([]) }} + {{ files_uploaded.results | default([]) }}"
+  when: (templates_in_place is changed or files_uploaded is changed) and item is changed and item.item.run_shell_after is defined and item.item.run_shell_after
+  register: shell_backup_done
+  tags: config_files, deploy_templates, upload_files
+

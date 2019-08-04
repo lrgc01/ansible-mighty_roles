@@ -39,7 +39,7 @@
   loop: "{{ keypair_registered.results }}"
   when: keypair_registered is success and item.key.private_key is defined
   tags: create_key_pairs, create_rds_instance, 
-        create_ec2_instance, create_instance
+        create_ec2_instances, create_instance
 
 #############################
 # EC2 instances ('wait' = 'yes' to its completion)
@@ -73,10 +73,10 @@
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
-    state: "{{ item.command }}"
+    state: "{{ item.state }}"
     instance_type: "{{ item.type }}"
     db_name: "{{ item.db_name }}"
-    db_instance_identifier: "{{ item.db_name }}"
+    db_instance_identifier: "{{ item.instance }}"
     engine: "{{ item.engine }}"
     allocated_storage: "{{ item.storage | default(omit) }}"
     vpc_security_group_ids: "{{ created_sg | json_query(sg_id) }}"
@@ -87,6 +87,12 @@
     wait: "{{ item.wait | default(true) }}"
     skip_final_snapshot: "{{ item.skip_final_snapshot | default(omit) }}"
     final_db_snapshot_identifier: "{{ item.final_db_snapshot_identifier | default(omit) }}"
+    backup_retention_period: "{{ item.backup_retention_period | default(omit) }}"
+    preferred_backup_window: "{{ item.preferred_backup_window | default(omit) }}"
+    enable_performance_insights: "{{ item.enable_performance_insights | default(omit) }}"
+    enable_cloudwatch_logs_exports: "{{ item.cloudwatch_logs_exports | default(omit) }}"
+    monitoring_interval: "{{ item.monitoring_interval | default(omit) }}"
+    monitoring_role_arn: "{{ item.monitoring_role_arn | default(omit) }}"
   loop: "{{ rdsInstancesByName }}"
   when: rdsInstancesByName is defined and created_sg is success
   vars:
@@ -127,14 +133,19 @@
     aws_access_key: "{{ aws_access_key | default(omit) }}"
     aws_secret_key: "{{ aws_secret_key | default(omit) }}"
     region: "{{ region }}"
-    state: "{{ cloudfrontInstances[0].state }}"
-    default_origin_domain_name: "{{ cloudfrontInstances[0].domainname }}"
-    enabled: "{{ cloudfrontInstances[0].enabled }}"
-    tags: "{{ cloudfrontInstances[0].tags | default(omit) }}"
-  #loop: "{{ cloudfrontInstances }}"
-  #when: cloudfrontInstances[0] and default_subnets is success
+    state: "{{ item.state | default(omit) }}"
+    enabled: "{{ item.enabled | default(omit) }}"
+    origins: "{{ item.origins | default(omit) }}"
+    default_origin_domain_name: "{{ item.defOrigDomName | default(omit) }}"
+    alias: "{{ item.alias | default(omit) }}"
+    aliases: "{{ item.aliases | default(omit) }}"
+    caller_reference: "{{ item.caller_reference | default(omit) }}"
+    distribution_id: "{{ item.distribution_id | default(omit) }}"
+    tags: "{{ item.tags | default(omit) }}"
+    wait: "{{ item.wait | default(omit) }}"
+  loop: "{{ cloudfrontInstances }}"
   # When variables are defined and facts returned no list
-  when: cloudfrontInstances is defined and cloudfrontInstances[0].enabled and not (cfn_facts.ansible_facts.cloudfront.summary.distributions[0] is defined)
+  when: cloudfrontInstances is defined 
   register: cloudfront_instance_created
   tags: create_cfn_instances, create_aws_instances
 
@@ -151,6 +162,7 @@
 #  when: item.key.private_key is defined
 #  vars:
 #    sg_id: "results[?group_name=='{{ rdsInstancesByName[0].sg_name }}'].group_id"
+#     sg_id: "load_balancers[?load_balancer_name=='{{ item. }}'].group_id"
 #    #query_by_name: "results[?group_name=='{{ winSgName }}'].group_id"
 #    #query_by_name: "results[?key.name=='test-key'].key"
 #    query_by_name: "subnets[*].{subnet_id: subnet_id}"

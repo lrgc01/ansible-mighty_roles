@@ -1,9 +1,8 @@
-#[db_servers]
-#debian2
+[dockersrv]
+debian3
 
-[docker_servers]
-debian2
+[local]
+localhost
 
-#[ha_servers]
-#debian2
-
+[local:vars]
+ansible_python_interpreter=/usr/bin/python3

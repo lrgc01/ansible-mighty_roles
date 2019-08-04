@@ -1,0 +1,49 @@
+- name: Create/modify/delete Target Group -
+  elb_target_group:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    protocol: "{{ item.proto | default(tcp) }}"
+    port: "{{ item.port }}"
+    target_type: "{{ item.type | default(omit) }}"
+    vpc_id: "{{ item.vpc_id | default(vpc_facts.vpcs[0].vpc_id) }}"
+    health_check_path: "{{ item.HChkPath | default(omit) }}"
+    health_check_port: "{{ item.HChkPort | default(omit) }}"
+    health_check_protocol: "{{ item.HChkProto | default(omit) }}"
+    health_check_interval: "{{ item.HChkInterval | default(omit) }}"
+    health_check_timeout: "{{ item.HChkTimeout | default(omit) }}"
+    healthy_threshold_count: "{{ item.HChkThreshold | default(omit) }}"
+    successful_response_codes: "{{ item.respCode | default(omit) }}"
+    targets: "{{ item.targets | default(omit) }}"
+    wait_timeout: "{{ item.timeout | default(omit) }}"
+    wait: "{{ item.wait | default(omit) }}"
+    stickiness_enabled: "{{ item.stickiness_enabled | default(omit) }}"
+    modify_targets: "{{ item.modify_targets | default(omit) }}"
+  loop: "{{ targetGroupList }}"
+  when: targetGroupList is defined and vpc_facts is success
+  register: target_groups
+  tags: create_TG
+
+- name: Create/modify/delete application LB
+  elb_application_lb:
+    aws_access_key: "{{ aws_access_key | default(omit) }}"
+    aws_secret_key: "{{ aws_secret_key | default(omit) }}"
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    security_groups: "{{ item.secGroups | default(omit) }}"
+    subnets: "{{ item.subnets | default(omit) }}"
+    scheme: "{{ item.scheme | default(omit) }}"
+    listeners: "{{ item.listeners | default(omit) }}"
+    access_logs_enabled: "{{ item.access_logs_enabled | default(omit) }}"
+    access_logs_s3_bucket: "{{ item.access_logs_s3_bucket | default(omit) }}"
+    access_logs_s3_prefix: "{{ item.access_logs_s3_prefix | default(omit) }}"
+    wait: "{{ item.wait | default(omit) }}"
+    wait_timeout: "{{ item.timeout | default(omit) }}"
+    deletion_protection: "{{ item.delProt | default(omit) }}"
+  loop: "{{ loadBalancerList }}"
+  when: loadBalancerList is defined 
+  register: load_balancers
+  tags: create_LB

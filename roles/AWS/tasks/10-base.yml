@@ -8,7 +8,7 @@
   when: out_dirs is defined
   register: output_dir_ready
   tags: base_config, gather_default_vpc, create_security_groups,
-        create_ec2_instances, create_aws_instances
+        create_ec2_instances, create_aws_instances, gather_elb
 
 - name: Set AWS config ini style file -----
   ini_file:

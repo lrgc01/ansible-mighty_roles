@@ -7,7 +7,7 @@
     group: "{{ git_user }}"
     mode: "g+rwx"
     recurse: false
-  when: git_repodir != false
+  when: git_repodir is defined
   register: git_perms_in_repodir
   tags: git_config
 
@@ -17,8 +17,10 @@
     creates: "{{ item }}"
     chdir: "{{ git_repodir }}"
     warn: false
-  loop: "{{ project_list }}"
-  when: project_list[0] and git_perms_in_repodir is success and git_repodir != false
+  loop: "{{ git_project_list }}"
+  when: git_project_list is defined 
+        and git_repodir is defined 
+        and git_perms_in_repodir is success 
   register: git_repos_created
   tags: git_config
 
@@ -30,6 +32,10 @@
     update: "{{ item.update_y_n | default(omit) }}"
     clone: "{{ item.clone_y_n | default(omit) }}"
     version: "{{ item.branch | default(omit) }}"
+    ssh_opts: "{{ item.ssh_opts | default(omit) }}"
+    accept_hostkey: "{{ item.accept_hostkey | default(true) }}"
+    key_file: "{{ item.key_file | default(omit) }}"
+  become: "{{ item.become | default(omit) }}"
   loop: "{{ gitCloneList }}"
   when: gitCloneList is defined
   register: git_repo_cloned
