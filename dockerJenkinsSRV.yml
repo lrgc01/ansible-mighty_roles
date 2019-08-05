@@ -1,8 +1,10 @@
 ---
-- hosts: dockerregistry
+- hosts: dockerJenkinsSRV
   gather_facts: "{{ gather_y_n | default(true) }}"
-  become: true
   remote_user: "{{ remote_user | default('luiz') }}"
+  become: true
+  vars_files:
+    - vars_files/dockerJenkinsSRV.yml
   roles:
     - common
     - base

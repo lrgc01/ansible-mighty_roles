@@ -15,9 +15,14 @@ confdir : "conf.d"
 #
 # Common role block variable definition
 #
-# We need git installed first (or before template deployment - see install shell script below)
-#base_dep_pkg_list:
-#   - { pkg : "git"  }
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : 
+  - {  
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
 
 pip_install_list        : [ "docker" , ]
 
