@@ -1,0 +1,11 @@
+---
+- hosts: dockerNginxUWSGI
+  gather_facts: "{{ gather_y_n | default(true) }}"
+  remote_user: "{{ remote_user | default('luiz') }}"
+  become: true
+  vars_files:
+    - vars_files/dockerNginxUWSGI.yml
+  roles:
+    - common
+    - base
+    - Docker
