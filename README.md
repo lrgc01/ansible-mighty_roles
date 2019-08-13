@@ -327,7 +327,7 @@ See https://letsencrypt.org/docs/staging-environment/
 
 To avoid warning messages from the browser:
 
-  - Download and install intermediate certificate: https://letsencrypt.org/certs/fakeleintermediatex1.pem
+  - Download and install intermediate certificate: [https://letsencrypt.org/certs/fakeleintermediatex1.pem](https://letsencrypt.org/certs/fakeleintermediatex1.pem)
 
-  - Download and install root certificate to trust staging: https://letsencrypt.org/certs/fakelerootx1.pem
+  - Download and install root certificate to trust staging: [https://letsencrypt.org/certs/fakelerootx1.pem](https://letsencrypt.org/certs/fakelerootx1.pem)
 

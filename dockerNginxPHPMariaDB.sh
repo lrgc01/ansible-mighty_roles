@@ -80,9 +80,9 @@ SKIP_TAGS=""
 #SKIP_TAGS="--skip-tags bootstrap_python"
 
 # Order is important, since Docker will create de DBMS server
-ansible-playbook -i dockersrv --extra-vars "gather_y_n=yes update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Dockers.yml 
-ansible-playbook -i hasrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
-ansible-playbook -i dbsrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS DBservers.yml 
+ansible-playbook -i dockerNginxPHPMariaDB.inv --extra-vars "gather_y_n=yes update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS dockerNginxPHPMariaDB.yml 
+ansible-playbook -i HAservers.inv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
+ansible-playbook -i DBservers.inv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS DBservers.yml 
 
 SKIP_TAGS="--skip-tags bootstrap_python"
 #ansible-playbook -i websrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Site.yml 

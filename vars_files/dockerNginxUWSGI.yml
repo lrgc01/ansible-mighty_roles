@@ -190,7 +190,6 @@ dockerContainerList :
 # srv is used to restart the service, if applicable, after a template is changed.
 # docker_container is the container name to restart in case of file modification
 docker_dir_file_tmpl_list  :
-   - { types : [ "dir" ] , dest : "{{ docker_nginx_cfg }}/ssl" , }
    - { 
         state      : "link" , 
         src        : "../sites-available/{{ domain1 }}.conf" , 

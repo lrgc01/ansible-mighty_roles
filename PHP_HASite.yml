@@ -2,7 +2,7 @@
 # These servers might be kept in one server each 
 # or joined into one or two servers according to 
 # the project. Just change the inventory.
-- hosts: docker_servers
+- hosts: dockerNginxPHPMariaDB
   gather_facts: "{{ gather_y_n }}"
   become: true
   remote_user: "luiz"
@@ -15,7 +15,7 @@
     - phpcfg
     - finals
 
-- hosts: ha_servers
+- hosts: HAservers
   gather_facts: "{{ gather_y_n }}"
   become: true
   remote_user: "luiz"
@@ -25,7 +25,7 @@
    - users
    - SSLcrt
 
-- hosts: db_servers
+- hosts: DBservers
   gather_facts: "{{ gather_y_n }}"
   become: true
   remote_user: "luiz"

@@ -79,12 +79,6 @@ SKIP_TAGS=""
 # After first install, the tag "bootstrap_python" can be safely skipped:
 #SKIP_TAGS="--skip-tags bootstrap_python"
 
-# Order is important, since Docker will create de DBMS server
-#ansible-playbook -i dockersrv --extra-vars "gather_y_n=yes update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS Dockers.yml 
-#ansible-playbook -i hasrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS HAservers.yml 
-#ansible-playbook -i dbsrv --extra-vars "gather_y_n=false update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS DBservers.yml 
-
-SKIP_TAGS="--skip-tags bootstrap_python"
 ansible-playbook -i inventory --extra-vars "gather_y_n=true update_cache_y_n=no basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS PHP_HASite.yml 
 
 # garbage

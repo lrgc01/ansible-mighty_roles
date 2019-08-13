@@ -9,7 +9,7 @@
   loop: "{{ docker_dir_file_tmpl_list }}"
   when: docker_dir_file_tmpl_list is defined and item.dir is defined and item.dir
   register: docker_dirs_in_place
-  tags: docker_container_config
+  tags: docker, docker_container_config
 
 - name: Make proper links or remove (state link or absent) -
   file:
@@ -21,7 +21,7 @@
   loop: "{{ docker_dir_file_tmpl_list }}"
   when: docker_dir_file_tmpl_list is defined and item.state is defined and (item.state == "link" or item.state == "absent")
   register: docker_files_linked_removed
-  tags: docker_container_config
+  tags: docker, docker_container_config
 
 - name: Deploy templates dir_file_tmpl_list.state=tmpl -----
   template:
@@ -33,7 +33,7 @@
   loop: "{{ docker_dir_file_tmpl_list }}"
   when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success and item.state is defined and item.state == "tmpl"
   register: docker_tmpls_in_place
-  tags: docker_container_config
+  tags: docker, docker_container_config
 
 #- name: Make proper links dir_file_tmpl_list.types=link ---
 # file:
@@ -54,4 +54,4 @@
   loop: "{{ docker_up_down_files_list }}"
   when: docker_up_down_files_list is defined and "upload" in item.action
   register: docker_cfg_files_uploaded
-  tags: docker_container_config
+  tags: docker, docker_container_config

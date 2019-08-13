@@ -1,4 +1,14 @@
 ---
+- name: Mydebug
+  debug:
+     msg: "{{ final }}"
+  vars:
+     list1: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
+     list2: "{{ list1 | map(attribute='item') | list }}"
+     final: "{{ list2 | map(attribute='docker_container') | list | flatten | unique }}"
+  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_files_linked_removed is changed) 
+  tags: docker, docker_container_config
+
 - name: Docker restart after tmpl/file/link changes -------
   docker_container:
      name: "{{ item.item.docker_container }}"
