@@ -1,0 +1,15 @@
+server {
+        listen 80 ;
+        listen [::]:80 ;
+        root /var/www/html;
+        index index.html index.htm index.nginx-debian.html;
+        server_name {{ item.servername }};
+        location / {
+                include uwsgi_params;
+                uwsgi_pass {{ item.socketname }};
+                uwsgi_param Host $host;
+                uwsgi_param X-Real-IP $remote_addr;
+                uwsgi_param X-Forwarded-For $proxy_add_x_forwarded_for;
+                uwsgi_param X-Forwarded-Proto $http_x_forwarded_proto;
+        }
+}

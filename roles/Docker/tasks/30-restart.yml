@@ -4,7 +4,7 @@
      name: "{{ item.item.docker_container }}"
      state: "started"
      restart: true
-  loop: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_links_in_place.results | default([]) }}"
-  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_links_in_place is changed) 
+  loop: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
+  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_files_linked_removed is changed) 
         and item is changed and item.item.docker_container is defined
   tags: docker, docker_container_config
