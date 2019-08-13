@@ -1,0 +1,10 @@
+
+---
+- hosts: local
+  connection: local
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars_files/AWS-ECS.yml
+  roles:
+    - AWS
