@@ -102,8 +102,8 @@ dir_file_tmpl_list  :
 #
 #
 # List of containers to be created.
-# Except for 'name' and 'networks', all others may be omitted:
-#    networks (for now networks must be defined - or use 'bridge')
+# Except for 'name' and 'enabled', all others may be omitted:
+#    networks (use 'bridge' for default net or omit)
 #    links
 #    volumes
 #    volumes_from
@@ -122,9 +122,9 @@ dockerContainerList :
   - {
         enabled         : true ,
         name            : "uwsgi" ,
-        image           : "debian3:5000/uwsgi-stretch_slim" ,
+        image           : "lrgc01/uwsgi-stretch_slim" ,
         pull            : true ,
-        networks        : [ { name : "bridge" } ] ,
+        networks        : [ { name : "bridge" } , ] ,
         volumes         : [ "{{ uwsgi_dir_vol }}:{{ uwsgi_basedir }}" , ] ,
         working_dir     : "{{ uwsgi_basedir }}" ,
         user            : "uwsgi" ,
@@ -138,9 +138,9 @@ dockerContainerList :
   - {
         enabled         : true ,
         name            : "{{ dockername_nginx }}" ,
-        image           : "debian3:5000/nginx-stretch_slim" ,
+        image           : "lrgc01/nginx-stretch_slim" ,
         pull            : true ,
-        networks        : [ { name : "bridge" } ] ,
+        networks        : [ { name : "bridge" } , ] ,
         volumes         : [ "{{ nginx_cfg_vol }}:/etc/nginx", "{{ nginx_web_vol }}:/var/www/html", "{{ nginx_log_vol }}:/var/log/nginx", ] ,
         volumes_from    : [ "uwsgi" ] ,
         published_ports : [ "0.0.0.0:8080:80", "0.0.0.0:4443:443", ] , 
@@ -149,7 +149,7 @@ dockerContainerList :
   - {
         enabled         : true ,
         name            : "{{ dockername_apache2 }}" ,
-        image           : "debian3:5000/apache2-stretch_slim" ,
+        image           : "lrgc01/apache2-stretch_slim" ,
         pull            : true ,
         networks        : [ { name : "bridge" } ] ,
         volumes         : [ "{{ apache2_cfg_vol }}:/etc/apache2", "{{ apache2_web_vol }}:/var/www/html", "{{ apache2_log_vol }}:/var/log/apache2", ] ,
@@ -161,7 +161,7 @@ dockerContainerList :
   - {
         enabled         : false ,
         name            : "my_db_1" ,
-        image           : "debian3:5000/mariadb-stretch_slim" ,
+        image           : "lrgc01/mariadb-stretch_slim" ,
         pull            : true ,
         networks        : [ { name : "bridge" } ] ,
         volumes         : [ "mysql_data:/var/lib/mysql", "mysql_etc:/etc/mysql", ] ,

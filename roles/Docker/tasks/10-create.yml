@@ -22,7 +22,7 @@
   register: shell_backup_done
   tags: config_files, deploy_templates, upload_files
 
-- name: Log into DockerHub --------------------------------
+- name: Log into DockerHub to push images -----------------
   docker_login:
      username: "{{ docker_username }}"
      password: "{{ docker_password }}"
@@ -30,12 +30,23 @@
   register: docker_logged_in
   tags: docker
 
+#- name: My debug
+#  debug:
+#     msg: "{{ item }}"
+#  loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none', 'host']) }}"
+#  vars: 
+#    my_query: "[?enabled].networks"
+#    myHashNetList: "{{ dockerContainerList | json_query(my_query) | list | flatten | unique }}"
+#  when: dockerContainerList is defined
+#  tags: docker, docker_networks, debug
+
 - name: Docker network deployment -------------------------
   docker_network:
      name: "{{ item }}"
   loop: "{{ myHashNetList | map(attribute='name') | list | difference(['bridge','none','host']) }}"
   vars: 
-    myHashNetList: "{{ dockerContainerList | map(attribute='networks') | list | flatten | unique }}"
+    my_query: "[?enabled].networks"
+    myHashNetList: "{{ dockerContainerList | json_query(my_query) | list | flatten | unique }}"
   when: dockerContainerList is defined
   register: docker_networks_created
   tags: docker, docker_networks

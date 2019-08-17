@@ -75,9 +75,8 @@ export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -F ${SSH
 # update_cache_y_n=yes or no
 
 # First, full, playbook running - no skip
-SKIP_TAGS=""
 # After first install, the tag "bootstrap_python" can be safely skipped:
-#SKIP_TAGS="--skip-tags bootstrap_python"
+[ -z "$SKIP_TAGS" ] && SKIP_TAGS="--skip-tags bootstrap_python"
 
 # Order is important, since Docker will create de DBMS server
 ansible-playbook -i ${PROGNAME}.inv  --extra-vars "update_cache_y_n=yes basedir=${BASEDIR} confdir=${CONFDIR} sshconf=${SSHCONF}" $SKIP_TAGS ${PROGNAME}.yml 

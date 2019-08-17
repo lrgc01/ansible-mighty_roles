@@ -7,7 +7,8 @@
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
   loop: "{{ docker_dir_file_tmpl_list }}"
-  when: docker_dir_file_tmpl_list is defined and item.dir is defined and item.dir
+  when: docker_dir_file_tmpl_list is defined and item.dir is defined 
+        and item.dir
   register: docker_dirs_in_place
   tags: docker, docker_container_config
 
@@ -19,7 +20,8 @@
     force: "{{ item.force | default(omit) }}"
     follow: "{{ item.follow | default(omit) }}"
   loop: "{{ docker_dir_file_tmpl_list }}"
-  when: docker_dir_file_tmpl_list is defined and item.state is defined and (item.state == "link" or item.state == "absent")
+  when: docker_dir_file_tmpl_list is defined and item.state is defined 
+        and (item.state == "link" or item.state == "absent")
   register: docker_files_linked_removed
   tags: docker, docker_container_config
 
@@ -31,7 +33,8 @@
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
   loop: "{{ docker_dir_file_tmpl_list }}"
-  when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success and item.state is defined and item.state == "tmpl"
+  when: docker_dir_file_tmpl_list is defined and docker_dirs_in_place is success 
+        and item.state is defined and item.state == "tmpl"
   register: docker_tmpls_in_place
   tags: docker, docker_container_config
 

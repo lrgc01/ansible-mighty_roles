@@ -1,20 +1,30 @@
 ---
-- name: Mydebug
-  debug:
-     msg: "{{ final }}"
-  vars:
-     list1: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
-     list2: "{{ list1 | map(attribute='item') | list }}"
-     final: "{{ list2 | map(attribute='docker_container') | list | flatten | unique }}"
-  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_files_linked_removed is changed) 
-  tags: docker, docker_container_config
+#- name: MyDebug
+#  debug:
+#     var: final
+#  vars:
+#     list1: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
+#     #my_query: "[*].{item: item, changed: changed}"
+#     #my_query: "[*].{container: item.docker_container, changed: changed}"
+#     #my_query: "[?changed].{container: item.docker_container, changed: changed}"
+#     my_query: "[?changed].item.docker_container"
+#     final: "{{ list1 | json_query(my_query) | list | flatten | unique }}"
+#     #final: "{{ list1 | map(attribute='item.docker_container') | list }}"
+#     #final2: "{{ list1 | map(attribute='changed') | list }}"
+#     #final: "{{ list2 | map(attribute='docker_container') | list | flatten | unique }}"
+#  #loop: "{{ final }}"
+#  when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_files_linked_removed is changed) 
+#  tags: docker, docker_container_config
 
 - name: Docker restart after tmpl/file/link changes -------
   docker_container:
-     name: "{{ item.item.docker_container }}"
+     name: "{{ item }}"
      state: "started"
      restart: true
-  loop: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
+  vars:
+     list1: "{{ docker_tmpls_in_place.results | default([]) }} + {{ docker_cfg_files_uploaded.results | default([]) }} + {{ docker_files_linked_removed.results | default([]) }}"
+     my_query: "[?changed].item.docker_container"
+     final: "{{ list1 | json_query(my_query) | list | flatten | unique }}"
+  loop: "{{ final }}"
   when: (docker_tmpls_in_place is changed or docker_cfg_files_uploaded is changed or docker_files_linked_removed is changed) 
-        and item is changed and item.item.docker_container is defined
   tags: docker, docker_container_config
