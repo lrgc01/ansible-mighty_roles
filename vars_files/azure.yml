@@ -50,7 +50,7 @@ az_SGList :
                name                   : "WebPorts" ,
                protocol               : "Tcp",
                source_address_prefix  : "*" , 
-               destination_port_range : [ "80" , "443", ],
+               destination_port_range : [ "80" , "443", "8800" , "4433" ,],
                access                 : "Allow" ,
                priority               : "950" ,
                direction              : "Inbound" ,
@@ -131,6 +131,7 @@ az_VMList :
        net_ifs          : "{{ az_NetIfList[0].name }}" ,
        vm_size          : "Standard_B1s" ,
        os_type          : "Linux", 
+       os_disk_size_gb  : "64" ,
        image            : {
                             offer     : "Debian" , 
                             publisher : "credativ" ,
