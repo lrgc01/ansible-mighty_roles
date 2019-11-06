@@ -24,7 +24,7 @@
   register: resource_group_created
   tags: azure_vm, azure_subnet, azure_vnet, azure_rg
 
-- name: Create / Change Security Group(s) -------------------
+- name: Create / change Security Group(s) -------------------
   azure_rm_securitygroup:
      profile: "{{ az_profile | default(omit) }}"
      cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
@@ -62,7 +62,6 @@
      address_prefix: "{{ item.address }}"
      virtual_network: "{{ item.VNetwork }}"
      state: "{{ item.state | default(omit) }}"
-     tags: "{{ item.tags | default(omit) }}"
   loop: "{{ az_SubnetList  }}"
   when: az_SubnetList is defined and virtual_network_created is success
   register: sub_network_created
@@ -100,7 +99,7 @@
   register: network_interface_created
   tags: azure_vm, azure_net_if
 
-- name: Create / modify Virtual Machine(s) ------------------
+- name: Create / change Virtual Machine(s) ------------------
   azure_rm_virtualmachine:
      profile: "{{ az_profile | default(omit) }}"
      cert_validation_mode: "{{ az_cert_validation_mode | default(omit) }}"
@@ -117,6 +116,8 @@
      virtual_network: "{{ item.VNetwork | default(omit) }}"
      subnet_name: "{{ item.subnet | default(omit) }}"
      image: "{{ item.image }}"
+     os_disk_size_gb: "{{ item.os_disk_size | default('64') }}"
+     managed_disk_type: "{{ item.managed_disk_type | default(omit) }}"
   loop: "{{ az_VMList  }}"
   when: az_VMList is defined and sub_network_created is success
   register: vm_created

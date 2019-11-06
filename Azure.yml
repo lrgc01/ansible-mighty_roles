@@ -4,7 +4,6 @@
   gather_facts: false
   become: false
   vars_files: 
-    - ../secret/azure.yml
     - vars_files/azure.yml
   roles:
    - Azure
