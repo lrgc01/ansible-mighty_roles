@@ -1,0 +1,11 @@
+---
+- hosts: dockerDolibarr
+  gather_facts: "{{ gather_y_n | default(true) }}"
+  remote_user: "{{ remote_user | default('azureuser') }}"
+  become: true
+  vars_files:
+    - vars_files/dockerDolibarr.yml
+  roles:
+    - common
+    - base
+    - Docker
