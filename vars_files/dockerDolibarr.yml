@@ -38,6 +38,7 @@ dolibarr_vols :
   - { name : "doliCfg" , path : "/etc/php" , } 
   - { name : "doliRun" , path : "/run/php" , } 
   - { name : "doliData" , path : "/var/www" , } 
+docker_dolibarr_data : "/var/lib/docker/volumes/{{ dolibarr_vols[2].name }}/_data"
 
 DB_vols : 
   - { name : "DBCfg"  , path : "/etc/mysql" , } 
@@ -48,8 +49,8 @@ dockername_nginx : "nginx"
 dockername_db : "db1"
 dockername_dolibarr : "dolibarr"
 
-FQDN_domain1   : "dogshearing.uk.to"
-domain1   : "{{ FQDN_domain1 }}"
+FQDN_domain1 : "dogshearing.uk.to"
+domain1      : "{{ FQDN_domain1 }}"
 
 ###########################################
 #
@@ -157,7 +158,7 @@ dockerContainerList :
                             "{{ nginx_vols[1].name }}:{{ nginx_vols[1].path }}", 
                             "{{ nginx_vols[2].name }}:{{ nginx_vols[2].path }}", ] ,
         volumes_from    : [ "{{ dockername_dolibarr }}" ] ,
-        published_ports : [ "0.0.0.0:8800:80", "0.0.0.0:4433:443", ] , 
+        published_ports : [ "0.0.0.0:80:80", "0.0.0.0:443:443", ] , 
         state           : "started" ,
     }
 
@@ -217,3 +218,78 @@ dockerContainerList :
 #     }
 #
 #--- End of Docker role block
+
+
+account_key      : "account-key.key"
+key_base_path    : "{{ docker_nginx_cfg }}/ssl"
+cert_base_path   : "{{ key_base_path }}"
+cert_name_prefix : "{{ domain1 }}-prod"
+domain1_rootdir  : "{{ docker_dolibarr_data }}/dolibarr/htdocs" # to copy the challenge to check
+###########################################
+#
+# SSLcrt role block variable definition
+#
+# SSL certificate and private key
+#
+# Production directory in Let's Encrypt: "https://acme-v02.api.letsencrypt.org/directory",
+# Staging directory in Let's Encrypt: "https://acme-staging-v02.api.letsencrypt.org/directory",
+#
+# Due to map filter inside the loop, cert_hash_list first element cannot be false like other lists
+# So we define another parameter to allow the system to run safely (cert_hash_list[*].enabled)
+cert_hash_list :
+   -  {
+        enabled               : true ,
+        selfsigned            : false ,
+        pem_file              : false ,
+        account_priv_key_path : "{{ key_base_path }}/{{ account_key }}",
+        csr_priv_key_path     : "{{ key_base_path }}/{{ cert_name_prefix }}.csr.key",
+        csr_cert_path         : "{{ cert_base_path }}/{{ cert_name_prefix }}.csr",
+        crt_cert_path         : "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
+        crt_fullchain_path    : "{{ cert_base_path }}/{{ cert_name_prefix }}.fullchain.crt",
+        crt_interchain_path   : "{{ cert_base_path }}/{{ cert_name_prefix }}.intermmediate.crt",
+        acme_directory        : "https://acme-v02.api.letsencrypt.org/directory",
+        C                     : "BR",
+        ST                    : "Rio de Janeiro",
+        L                     : "Teresopolis",
+        O                     : "Dogshearing LTDA",
+        OU                    : "Dogshearing LTDA",
+        email_address         : "luizrogeriocarvalho@gmail.com",
+        CN                    : "{{ domain1 }}",
+        force_cert_y_n        : "no",
+        allow_creation_y_n    : "yes",
+        remaining_days        : "30",
+        server_certkey_path   : "{{ key_base_path }}/{{ domain1 }}.key",
+        server_cert_path      : "{{ cert_base_path }}/{{ domain1 }}.crt",
+        local_certkey_path    : "{{ confdir }}/{{ domain1 }}.key",
+        local_cert_path       : "{{ confdir }}/{{ domain1 }}.crt",
+        web_rootdir           : "{{ domain1_rootdir }}"
+      }
+
+# Below other variables depend on the cert_hash_list above.
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+server_cert_n_key_list :
+   -  { 
+        src  : "{{ cert_hash_list[0].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[0].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[0].crt_cert_path }}",
+        dest : "{{ cert_hash_list[0].server_cert_path }}"
+      }
+# srv defines if a service will be restarted upon modification in file upload
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+ssl_up_down_files_list  :
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        #srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        #srv    : "{{ web_service }}"
+      }
+
+#--- End of SSLCrt role block
