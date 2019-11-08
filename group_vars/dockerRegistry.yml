@@ -1,0 +1,81 @@
+---
+###########################################
+#
+# Generic block variable definition - used in any roles
+#
+# Some variables to be used worldwide
+#
+remote_user: "luiz"   # username to connect to the remote server
+confdir : "conf.d"
+
+
+#--- End of generic block
+
+###########################################
+#
+# Common role block variable definition
+#
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : 
+  - {  
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
+
+pip_install_list        : [ "docker" , ]
+
+#--- End of generic block
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list :
+   - { pkg : "containerd.io"   }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "docker-ce"       , srv : "docker"          , state : "started" , enabled : true }
+
+#--- End of base role block
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'networks', all others may be omitted:
+#    networks (for now networks must be defined - or use 'bridge')
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+dockerContainerList :
+  - {
+        enabled         : true ,
+        name            : "DocRegistry" ,
+        image           : "registry:2" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "registry_lib:/var/lib/registry", ] ,
+        published_ports : [ "0.0.0.0:5000:5000", ] , 
+        state           : "started" ,
+        restart_policy  : "unless-stopped" ,
+    }
+
+#--- End of Docker role block

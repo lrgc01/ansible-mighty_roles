@@ -1,0 +1,227 @@
+---
+###########################################
+# 
+# Common role block
+#
+# Preliminary common configs
+#
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : # It cames inside roles/Docker/defaults/main.yml 
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
+
+# Packages to install apt keys later
+# apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
+yum_req_packs : [ 'yum-utils', 'device-mapper-persistent-data', 'lvm2',]
+
+# Some very early pip python packs (It's inside roles/Docker/defaults/main.yml)
+pip_install_list        : [ "docker" ]
+
+#--- End of common role block
+
+# General variables
+#
+# Some volume names and host directories for a volume 
+nginx_cfg_vol: "nginxCfg"
+nginx_log_vol: "nginxLogs"
+nginx_web_vol: "nginxHtml"
+docker_nginx_cfg : "/var/lib/docker/volumes/{{ nginx_cfg_vol }}/_data"
+
+apache2_cfg_vol: "apache2Cfg"
+apache2_log_vol: "apache2Logs"
+apache2_web_vol: "apache2Html"
+docker_apache2_cfg : "/var/lib/docker/volumes/{{ apache2_cfg_vol }}/_data"
+
+uwsgi_dir_vol   : "uwsgi_dir"
+uwsgi_basedir   : "/uwsgi.d"
+uwsgi_sock      : "uwsgi.sock"
+uwsgi_fastsock  : "fastcgi.sock"
+
+dockername_nginx : "nginx"
+dockername_apache2 : "apache2"
+
+FQDN_domain1   : "debian4.mydomain.my"
+domain1   : "debian4"
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list :
+   - { pkg : "containerd.io"   }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "docker-ce" ,  srv : "docker" , state : "started" , enabled : true }
+
+#
+### dir, file, template or link, depending on key values
+###
+### Will be used in template and file modules to create, delete and link.
+###
+### This dir_file_tmpl_list dict list var will be used in some different tasks, one of
+### each type: 
+#      - tmpl, dir, file link, file removal (absent) and copy (up/down).
+#       (each item of the list may be one of them)
+###    - state = "link" uses src and dest: ln -s src dest (force=yes => ln -s -f).
+###    - state = "tmpl" uses tmpl, name and dest: tmpl -> dest/name.
+###    - state = "absent" uses dest to remove the inode.
+###    - state = "upload"/"download" uses 'copy' Ansible module to upload/download a file
+### Note that the same list element may be used to create a directory if not existing.
+###    - When "dir" is true create a directory using dest.
+#
+### "srv" is used to restart the service, if applicable, after a template or file is changed.
+##
+##*** Templates usually have many inline variables to substitute in their .j2 source files.
+#
+dir_file_tmpl_list  :
+        # Note: The DB host will be defined by IP in the start script inside container 
+   - { 
+        state      : "tmpl" , 
+        dir        : true ,
+        dest       : "/etc/docker" , 
+        srv        : "docker" ,
+        tmpl       : "daemon.json.j2" , 
+        name       : "daemon.json" , 
+        host       : "debian3" ,          # below here are the free form variables expected inside the .j2 template
+        port       : "5000" ,
+     }
+
+#--- End of base role block
+
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'enabled', all others may be omitted:
+#    networks (use 'bridge' for default net or omit)
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+dockerContainerList :
+  - {
+        enabled         : true ,
+        name            : "uwsgi" ,
+        image           : "lrgc01/uwsgi-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } , ] ,
+        volumes         : [ "{{ uwsgi_dir_vol }}:{{ uwsgi_basedir }}" , ] ,
+        working_dir     : "{{ uwsgi_basedir }}" ,
+        user            : "uwsgi" ,
+        published_ports : [ "0.0.0.0:9090:9090", "0.0.0.0:9191:9191" ] , 
+        state           : "started" ,
+        env             : { 
+            DOCKER_BASEDIR   : "{{ uwsgi_basedir }}", 
+            DOCKER_UWSGI_SOCK: "{{ uwsgi_sock }}", 
+           },
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_nginx }}" ,
+        image           : "lrgc01/nginx-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } , ] ,
+        volumes         : [ "{{ nginx_cfg_vol }}:/etc/nginx", "{{ nginx_web_vol }}:/var/www/html", "{{ nginx_log_vol }}:/var/log/nginx", ] ,
+        volumes_from    : [ "uwsgi" ] ,
+        published_ports : [ "0.0.0.0:8080:80", "0.0.0.0:4443:443", ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_apache2 }}" ,
+        image           : "lrgc01/apache2-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "{{ apache2_cfg_vol }}:/etc/apache2", "{{ apache2_web_vol }}:/var/www/html", "{{ apache2_log_vol }}:/var/log/apache2", ] ,
+        volumes_from    : [ "uwsgi" ] ,
+        published_ports : [ "0.0.0.0:8880:80", "0.0.0.0:4433:443", ] , 
+        state           : "started" ,
+        env             : { APACHE2_MOD_LIST : "proxy proxy_uwsgi" , } ,
+    }
+  - {
+        enabled         : false ,
+        name            : "my_db_1" ,
+        image           : "lrgc01/mariadb-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "mysql_data:/var/lib/mysql", "mysql_etc:/etc/mysql", ] ,
+        published_ports : [ "0.0.0.0:3306:3306", ] , 
+        state           : "started" ,
+    }
+
+
+#
+# After container creation:
+#
+# dir, file, template or link, depending on key values
+#
+# Will be used in template and file modules to create, delete and link.
+#
+# This docker_dir_file_tmpl_list dict var will be used in 4 different tasks, one of 
+# each type: tmpl, dir, link and file.
+#
+# If mode not present, it will default to 0644 for files and 0755 for directories
+# Note that one line may be used to multiple goals as defined in types.
+# "dir" uses dest only
+# "link" uses src and dest: ln -s src dest 
+#    (force=yes => ln -s -f)
+# "tmpl" uses name and dest: name.j2 -> dest/name
+# "absent" uses dest to remove files
+# srv is used to restart the service, if applicable, after a template is changed.
+# docker_container is the container name to restart in case of file modification
+docker_dir_file_tmpl_list  :
+   - { 
+        state      : "link" , 
+        src        : "../sites-available/{{ domain1 }}.conf" , 
+        dest       : "{{ docker_apache2_cfg }}/sites-enabled/{{ domain1 }}.conf" , 
+        force      : true , 
+        docker_container : "{{ dockername_apache2 }}" ,
+     }
+   - { 
+        state      : "tmpl" ,
+        dest       : "{{ docker_apache2_cfg }}/sites-available" , 
+        tmpl       : "apache2-uwsgi.conf.j2" , 
+        name       : "{{ domain1 }}.conf" , 
+        servername : "{{ FQDN_domain1 }}" , 
+        socketname : "unix:{{ uwsgi_basedir }}/{{ uwsgi_sock }}" , 
+        socketsrv  : "uwsgi://uwsgi-app1/" , # just need protocol - name doesn't matter
+        docker_container : "{{ dockername_apache2 }}" ,
+     }
+   - { 
+        state      : "link" , 
+        src        : "../sites-available/{{ domain1 }}.conf" , 
+        dest       : "{{ docker_nginx_cfg }}/sites-enabled/{{ domain1 }}.conf" , 
+        force      : true , 
+        docker_container : "{{ dockername_nginx }}" ,
+     }
+   - { 
+        state      : "tmpl" ,
+        dest       : "{{ docker_nginx_cfg }}/sites-available" , 
+        tmpl       : "nginx-uwsgi.conf.j2" , 
+        name       : "{{ domain1 }}.conf" , 
+        servername : "{{ FQDN_domain1 }}" , 
+        socketname : "unix:{{ uwsgi_basedir }}/{{ uwsgi_sock }}" , 
+        docker_container : "{{ dockername_nginx }}" ,
+     }
+#
+#--- End of Docker role block

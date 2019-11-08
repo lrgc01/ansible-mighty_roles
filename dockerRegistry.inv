@@ -1,8 +1,6 @@
-[dockersrv]
+[dockerRegistry]
 debian3
 
-[local]
-localhost
-
-[local:vars]
+[dockerRegistry:vars]
 ansible_python_interpreter=/usr/bin/python3
+

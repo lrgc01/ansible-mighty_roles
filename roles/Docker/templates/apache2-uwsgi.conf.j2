@@ -1,0 +1,10 @@
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        ServerName {{ item.servername }}
+        DocumentRoot /var/www/html
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+        <IfModule mod_proxy_uwsgi.c>
+                ProxyPass / {{ item.socketname }}|{{ item.socketsrv }}
+        </IfModule>
+</VirtualHost>

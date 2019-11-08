@@ -1,11 +1,9 @@
 ---
-- hosts: dockersrv
+- hosts: dockerRegistry
   gather_facts: "{{ gather_y_n | default(true) }}"
   become: true
-  remote_user: "{{ remote_user | default('ubuntu') }}"
+  remote_user: "{{ remote_user | default('luiz') }}"
   roles:
     - common
     - base
-    - gitcfg
     - Docker
-    - DB_adm

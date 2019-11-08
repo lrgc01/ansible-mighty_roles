@@ -13,27 +13,27 @@ There is just one role used: AWS - follow the subdir roles/AWS
 
 ## Ansible playbook
 
-Use the AWS.yml config file to start. The variables are all inside host\_vars/localhost.yml.
+Use the AWS-ECS.yml config file to start. The variables are all inside vars\_files/AWS-ECS.yml.
 
-The inventory file was named _inventory_ in the same directory.
+The inventory file was named _AWS-ECS.inv_ in the same directory.
 
 ### Step to step on AWS
 
   - List tasks
     ``` 
-    ansible-playbook -i inventory --list-tasks AWS.yml
+    ansible-playbook -i AWS-ECS.inv --list-tasks AWS-ECS.yml
     ``` 
 
   - Create back end tier - database
     ``` 
-    ansible-playbook -i inventory --tags gather_default_vpc,create_rds_instances AWS.yml
+    ansible-playbook -i AWS-ECS.inv --tags gather_default_vpc,create_rds_instances AWS-ECS.yml
     ``` 
      
   - Take note of the DB endpoint from facts.d/ directory
 
   - Create a basic environment before the ECS cluster
     ``` 
-    ansible-playbook -i inventory --tags gather_default_vpc,create_LB,create_TG,gather_elb AWS.yml
+    ansible-playbook -i AWS-ECS.inv --tags gather_default_vpc,create_LB,create_TG,gather_elb AWS-ECS.yml
     ``` 
     
   - Note the ARNs of TG, domain name of LB for api and web tiers from facts.d/ directory.
@@ -41,19 +41,19 @@ The inventory file was named _inventory_ in the same directory.
 
   - Create ECS cluster and services
     ``` 
-    ansible-playbook -i inventory --tags gather_default_vpc,ecs AWS.yml
+    ansible-playbook -i AWS-ECS.inv --tags gather_default_vpc,ecs AWS-ECS.yml
     ``` 
 
   - Create CloudFront distribution
     ``` 
-    ansible-playbook -i inventory --tags gather_default_vpc,create_cfn_instances AWS.yml
+    ansible-playbook -i AWS-ECS.inv --tags gather_default_vpc,create_cfn_instances AWS-ECS.yml
     ``` 
 
   - Note the Distribution ID to keep its idempotency (couldn't make it without the ID).
 
   - Run the complete playbook to check
     ``` 
-    ansible-playbook -i inventory AWS.yml
+    ansible-playbook -i AWS-ECS.inv AWS-ECS.yml
     ``` 
 
 Access the web application load balancer by its domain name and refresh many times. 

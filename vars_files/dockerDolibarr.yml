@@ -1,0 +1,295 @@
+---
+###########################################
+# 
+# Common role block
+#
+# Preliminary common configs
+#
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : # It cames inside roles/Docker/defaults/main.yml 
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
+
+# Packages to install apt keys later
+# apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
+yum_req_packs : [ 'yum-utils', 'device-mapper-persistent-data', 'lvm2',]
+
+# Some very early pip python packs (It's inside roles/Docker/defaults/main.yml)
+pip_install_list        : [ "docker" ]
+
+#--- End of common role block
+
+# General variables
+#
+# Some volume names and host directories for a volume 
+nginx_vols : 
+  - { name : "nginxCfg"  , path : "/etc/nginx" , } 
+  - { name : "nginxLogs" , path : "/var/log/nginx" , } 
+  - { name : "nginxHtml" , path : "/var/www/html" , } 
+
+docker_nginx_cfg : "/var/lib/docker/volumes/{{ nginx_vols[0].name }}/_data"
+
+dolibarr_basedir   : "/var/www/dolibarr"
+dolibarr_vols : 
+  - { name : "doliCfg" , path : "/etc/php" , } 
+  - { name : "doliRun" , path : "/run/php" , } 
+  - { name : "doliData" , path : "/var/www" , } 
+docker_dolibarr_data : "/var/lib/docker/volumes/{{ dolibarr_vols[2].name }}/_data"
+
+DB_vols : 
+  - { name : "DBCfg"  , path : "/etc/mysql" , } 
+  - { name : "DBLogs" , path : "/var/log/mysql" , } 
+  - { name : "DBData" , path : "/var/lib/mysql" , } 
+
+dockername_nginx : "nginx"
+dockername_db : "db1"
+dockername_dolibarr : "dolibarr"
+
+FQDN_domain1 : "dogshearing.uk.to"
+domain1      : "{{ FQDN_domain1 }}"
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list :
+   - { pkg : "containerd.io"   }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "docker-ce" ,  srv : "docker" , state : "started" , enabled : true }
+
+#
+### dir, file, template or link, depending on key values
+###
+### Will be used in template and file modules to create, delete and link.
+###
+### This dir_file_tmpl_list dict list var will be used in some different tasks, one of
+### each type: 
+#      - tmpl, dir, file link, file removal (absent) and copy (up/down).
+#       (each item of the list may be one of them)
+###    - state = "link" uses src and dest: ln -s src dest (force=yes => ln -s -f).
+###    - state = "tmpl" uses tmpl, name and dest: tmpl -> dest/name.
+###    - state = "absent" uses dest to remove the inode.
+###    - state = "upload"/"download" uses 'copy' Ansible module to upload/download a file
+### Note that the same list element may be used to create a directory if not existing.
+###    - When "dir" is true create a directory using dest.
+#
+### "srv" is used to restart the service, if applicable, after a template or file is changed.
+##
+##*** Templates usually have many inline variables to substitute in their .j2 source files.
+#
+#dir_file_tmpl_list  :
+        # Note: The DB host will be defined by IP in the start script inside container 
+#   - { 
+        #state      : "tmpl" , 
+        #dir        : true ,
+        #dest       : "/etc/docker" , 
+        #srv        : "docker" ,
+        #tmpl       : "daemon.json.j2" , 
+        #name       : "daemon.json" , 
+        #host       : "debian3" ,          # below here are the free form variables expected inside the .j2 template
+        #port       : "5000" ,
+     #}
+
+#--- End of base role block
+
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'enabled', all others may be omitted:
+#    networks (use 'bridge' for default net or omit)
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+dockerContainerList :
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_db }}" ,
+        image           : "lrgc01/mariadb-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } ] ,
+        volumes         : [ "{{ DB_vols[0].name }}:{{ DB_vols[0].path }}", 
+                            "{{ DB_vols[1].name }}:{{ DB_vols[1].path }}", 
+                            "{{ DB_vols[2].name }}:{{ DB_vols[2].path }}", ] ,
+        published_ports : [ "0.0.0.0:3306:3306", ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_dolibarr }}" ,
+        image           : "lrgc01/dolibarr-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } , ] ,
+        volumes         : [ "{{ dolibarr_vols[0].name }}:{{ dolibarr_vols[0].path }}" , 
+                            "{{ dolibarr_vols[1].name }}:{{ dolibarr_vols[1].path }}" , 
+                            "{{ dolibarr_vols[2].name }}:{{ dolibarr_vols[2].path }}" , ] ,
+        published_ports : [ "0.0.0.0:9000:9000", "0.0.0.0:9191:9191" ] , 
+        state           : "started" ,
+    }
+  - {
+        enabled         : true ,
+        name            : "{{ dockername_nginx }}" ,
+        image           : "lrgc01/nginx-stretch_slim" ,
+        pull            : true ,
+        networks        : [ { name : "bridge" } , ] ,
+        volumes         : [ "{{ nginx_vols[0].name }}:{{ nginx_vols[0].path }}", 
+                            "{{ nginx_vols[1].name }}:{{ nginx_vols[1].path }}", 
+                            "{{ nginx_vols[2].name }}:{{ nginx_vols[2].path }}", ] ,
+        volumes_from    : [ "{{ dockername_dolibarr }}" ] ,
+        published_ports : [ "0.0.0.0:80:80", "0.0.0.0:443:443", ] , 
+        state           : "started" ,
+    }
+
+
+#
+# After container creation:
+#
+# dir, file, template or link, depending on key values
+#
+# Will be used in template and file modules to create, delete and link.
+#
+# This docker_dir_file_tmpl_list dict var will be used in 4 different tasks, one of 
+# each type: tmpl, dir, link and file.
+#
+# If mode not present, it will default to 0644 for files and 0755 for directories
+# Note that one line may be used to multiple goals as defined in types.
+# "dir" uses dest only
+# "link" uses src and dest: ln -s src dest 
+#    (force=yes => ln -s -f)
+# "tmpl" uses name and dest: name.j2 -> dest/name
+# "absent" uses dest to remove files
+# srv is used to restart the service, if applicable, after a template is changed.
+# docker_container is the container name to restart in case of file modification
+#docker_dir_file_tmpl_list  :
+#   - { 
+#        state      : "link" , 
+#        src        : "../sites-available/{{ domain1 }}.conf" , 
+#        dest       : "{{ docker_apache2_cfg }}/sites-enabled/{{ domain1 }}.conf" , 
+#        force      : true , 
+#        docker_container : "{{ dockername_apache2 }}" ,
+#     }
+#   - { 
+#        state      : "tmpl" ,
+#        dest       : "{{ docker_apache2_cfg }}/sites-available" , 
+#        tmpl       : "apache2-uwsgi.conf.j2" , 
+#        name       : "{{ domain1 }}.conf" , 
+#        servername : "{{ FQDN_domain1 }}" , 
+#        socketname : "unix:{{ uwsgi_basedir }}/{{ uwsgi_sock }}" , 
+#        socketsrv  : "uwsgi://uwsgi-app1/" , # just need protocol - name doesn't matter
+#        docker_container : "{{ dockername_apache2 }}" ,
+#     }
+#   - { 
+#        state      : "link" , 
+#        src        : "../sites-available/{{ domain1 }}.conf" , 
+#        dest       : "{{ docker_nginx_cfg }}/sites-enabled/{{ domain1 }}.conf" , 
+#        force      : true , 
+#        docker_container : "{{ dockername_nginx }}" ,
+#     }
+#   - { 
+#        state      : "tmpl" ,
+#        dest       : "{{ docker_nginx_cfg }}/sites-available" , 
+#        tmpl       : "nginx-uwsgi.conf.j2" , 
+#        name       : "{{ domain1 }}.conf" , 
+#        servername : "{{ FQDN_domain1 }}" , 
+#        socketname : "unix:{{ uwsgi_basedir }}/{{ uwsgi_sock }}" , 
+#        docker_container : "{{ dockername_nginx }}" ,
+#     }
+#
+#--- End of Docker role block
+
+
+account_key      : "account-key.key"
+key_base_path    : "{{ docker_nginx_cfg }}/ssl"
+cert_base_path   : "{{ key_base_path }}"
+cert_name_prefix : "{{ domain1 }}-prod"
+domain1_rootdir  : "{{ docker_dolibarr_data }}/dolibarr/htdocs" # to copy the challenge to check
+###########################################
+#
+# SSLcrt role block variable definition
+#
+# SSL certificate and private key
+#
+# Production directory in Let's Encrypt: "https://acme-v02.api.letsencrypt.org/directory",
+# Staging directory in Let's Encrypt: "https://acme-staging-v02.api.letsencrypt.org/directory",
+#
+# Due to map filter inside the loop, cert_hash_list first element cannot be false like other lists
+# So we define another parameter to allow the system to run safely (cert_hash_list[*].enabled)
+cert_hash_list :
+   -  {
+        enabled               : true ,
+        selfsigned            : false ,
+        pem_file              : false ,
+        account_priv_key_path : "{{ key_base_path }}/{{ account_key }}",
+        csr_priv_key_path     : "{{ key_base_path }}/{{ cert_name_prefix }}.csr.key",
+        csr_cert_path         : "{{ cert_base_path }}/{{ cert_name_prefix }}.csr",
+        crt_cert_path         : "{{ cert_base_path }}/{{ cert_name_prefix }}.crt",
+        crt_fullchain_path    : "{{ cert_base_path }}/{{ cert_name_prefix }}.fullchain.crt",
+        crt_interchain_path   : "{{ cert_base_path }}/{{ cert_name_prefix }}.intermmediate.crt",
+        acme_directory        : "https://acme-v02.api.letsencrypt.org/directory",
+        C                     : "BR",
+        ST                    : "Rio de Janeiro",
+        L                     : "Teresopolis",
+        O                     : "Dogshearing LTDA",
+        OU                    : "Dogshearing LTDA",
+        email_address         : "luizrogeriocarvalho@gmail.com",
+        CN                    : "{{ domain1 }}",
+        force_cert_y_n        : "no",
+        allow_creation_y_n    : "yes",
+        remaining_days        : "30",
+        server_certkey_path   : "{{ key_base_path }}/{{ domain1 }}.key",
+        server_cert_path      : "{{ cert_base_path }}/{{ domain1 }}.crt",
+        local_certkey_path    : "{{ confdir }}/{{ domain1 }}.key",
+        local_cert_path       : "{{ confdir }}/{{ domain1 }}.crt",
+        web_rootdir           : "{{ domain1_rootdir }}"
+      }
+
+# Below other variables depend on the cert_hash_list above.
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+server_cert_n_key_list :
+   -  { 
+        src  : "{{ cert_hash_list[0].csr_priv_key_path }}",
+        dest : "{{ cert_hash_list[0].server_certkey_path }}"
+      }
+   -  { 
+        src  : "{{ cert_hash_list[0].crt_cert_path }}",
+        dest : "{{ cert_hash_list[0].server_cert_path }}"
+      }
+# srv defines if a service will be restarted upon modification in file upload
+# In a near future this list maybe mapped from the cert_hash_list in runtime
+ssl_up_down_files_list  :
+   -  { 
+        local  : "{{ cert_hash_list[0].local_certkey_path }}",
+        remote : "{{ cert_hash_list[0].server_certkey_path }}",
+        action : [ "upload" , "download" ],
+        #srv    : "{{ web_service }}"
+      }
+   -  { 
+        local  : "{{ cert_hash_list[0].local_cert_path }}" ,
+        remote : "{{ cert_hash_list[0].server_cert_path }}",
+        action : [ "upload" , "download" ],
+        #srv    : "{{ web_service }}"
+      }
+
+#--- End of SSLCrt role block

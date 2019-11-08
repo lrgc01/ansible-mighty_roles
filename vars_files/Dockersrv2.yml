@@ -5,20 +5,20 @@
 #
 # Preliminary common configs
 #
-#my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
-#listAptRepos : # It cames inside roles/Docker/defaults/main.yml 
-#  - {
-#       state   : "present" ,
-#       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
-#       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
-#       keyId   : "0EBFCD88" ,
-#    }
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : # see inside roles/Docker/defaults/main.yml 
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
 
 # Packages to install apt keys later
-# apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
+apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
 
 # Some very early pip python packs (It's inside roles/Docker/defaults/main.yml)
-#pip_install_list        : [ "docker" ]
+pip_install_list        : [ "docker" ]
 
 #--- End of common role block
 
@@ -140,30 +140,54 @@ dockerContainerList :
 # This docker_dir_file_tmpl_list dict var will be used in 4 different tasks, one of 
 # each type: tmpl, dir, link and file.
 #
-# If mode not present, it will default to 0644
+# If mode not present, it will default to 0644 for files and 0755 for directories
 # Note that one line may be used to multiple goals as defined in types.
 # "dir" uses dest only
-# "link" uses src and dest: ln -s src dest (force=yes => ln -s -f)
+# "link" uses src and dest: ln -s src dest 
+#    (force=yes => ln -s -f)
 # "tmpl" uses name and dest: name.j2 -> dest/name
 # "absent" uses dest to remove files
 # srv is used to restart the service, if applicable, after a template is changed.
+# docker_container is the container name to restart in case of file modification
 docker_dir_file_tmpl_list  :
-   - { types : [ "dir" ]      , dest : "{{ nginx_cfg }}/ssl"                   }
-   - { types : [ "link" ]     , dest : "{{ nginx_cfg }}/sites-enabled/{{ domain1 }}.conf" , src : "../sites-available/{{ domain1 }}.conf" , force : true , docker_container : "{{ dockername_nginx }}" }
-   - { types : [ "link" ]     , dest : "{{ apache2_cfg }}/sites-enabled/{{ domain1 }}.conf" , src : "../sites-available/{{ domain1 }}.conf" , force : true , docker_container : "{{ dockername_apache2 }}" }
+   - { types : [ "dir" ] , dest : "{{ nginx_cfg }}/ssl" , }
+   - { 
+        types      : [ "tmpl" , "link" ,] , 
+        dest       : "{{ apache2_cfg }}/sites-available" , 
+        tmpl       : "apache2-uwsgi.conf.j2" , 
+        name       : "{{ domain1 }}.conf" , 
+        src        : "../sites-available/{{ domain1 }}.conf" , 
+        force      : true , 
+        servername : "{{ FQDN_domain1 }}" , 
+        socketname : "unix:/uwsgi.d/uwsgi.sock" , 
+        socketsrv  : "uwsgi://uwsgi-app1/" , 
+        docker_container : "{{ dockername_apache2 }}" ,
+     }
+   - { 
+        types      : [ "tmpl" , "link" ,] , 
+        dest       : "{{ nginx_cfg }}/sites-available" , 
+        tmpl       : "nginx-uwsgi.conf.j2" , 
+        name       : "{{ domain1 }}.conf" , 
+        src        : "../sites-available/{{ domain1 }}.conf" , 
+        force      : true , 
+        servername : "{{ FQDN_domain1 }}" , 
+        socketname : "unix:/uwsgi.d/uwsgi.sock" , 
+        docker_container : "{{ dockername_nginx }}" ,
+     }
 
-docker_up_down_files_list  :
-   - {
-           action           : "upload" ,
-           local            : "files/nginx-{{ domain1 }}.conf" ,
-           remote           : "{{ nginx_cfg}}/sites-available/{{ domain1 }}.conf" ,
-           docker_container : "{{ dockername_nginx }}" ,
-   }
-   - {
-           action           : "upload" ,
-           local            : "files/apache2-{{ domain1 }}.conf" ,
-           remote           : "{{ apache2_cfg}}/sites-available/{{ domain1 }}.conf" ,
-           docker_container : "{{ dockername_apache2 }}" ,
-   }
+# docker_container is the container name to restart in case of file modification
+#docker_up_down_files_list  :
+#   - {
+#           action           : "upload" ,
+#           local            : "files/nginx-{{ domain1 }}.conf" ,
+#           remote           : "{{ nginx_cfg}}/sites-available/{{ domain1 }}.conf" ,
+#           docker_container : "{{ dockername_nginx }}" ,
+#   }
+#   - {
+#           action           : "upload" ,
+#           local            : "files/apache2-{{ domain1 }}.conf" ,
+#           remote           : "{{ apache2_cfg}}/sites-available/{{ domain1 }}.conf" ,
+#           docker_container : "{{ dockername_apache2 }}" ,
+#   }
 #
 #--- End of Docker role block

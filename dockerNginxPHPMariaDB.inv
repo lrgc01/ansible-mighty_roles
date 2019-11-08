@@ -1,9 +1,5 @@
 [docker_servers]
 lrgc01.eastus.cloudapp.azure.com
 
-[dockersrv]
-#debian3
-lrc-tic-01.brazilsouth.cloudapp.azure.com
-
-[dockersrv:vars]
+[docker_servers:vars]
 #ansible_python_interpreter=/usr/bin/python3
