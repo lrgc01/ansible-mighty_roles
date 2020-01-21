@@ -1,5 +1,6 @@
 [dockerDolibarr]
 lrgc01.eastus.cloudapp.azure.com
+#debian4
 
 [dockerDolibarr:vars]
 ansible_python_interpreter=/usr/bin/python3

@@ -1,5 +1,5 @@
 ---
-- name: Ensure dirs (when docker_dir_file_tmpl_list.dir) ---
+- name: Ensure dirs (docker_dir_file_tmpl_list.state==dir) -
   file:
     path: "{{ item.dest }}"
     state: "directory"
@@ -7,8 +7,8 @@
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
   loop: "{{ docker_dir_file_tmpl_list }}"
-  when: docker_dir_file_tmpl_list is defined and item.dir is defined 
-        and item.dir
+  when: docker_dir_file_tmpl_list is defined and item.state is defined 
+        and item.state == "dir"
   register: docker_dirs_in_place
   tags: docker, docker_container_config
 
@@ -25,7 +25,7 @@
   register: docker_files_linked_removed
   tags: docker, docker_container_config
 
-- name: Deploy templates dir_file_tmpl_list.state=tmpl -----
+- name: Deploy templates docker_dir_file_tmpl_list.state=tmpl 
   template:
     src: "{{ item.tmpl }}"
     dest: "{{ item.dest }}/{{ item.name }}"

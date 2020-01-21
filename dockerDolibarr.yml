@@ -1,7 +1,7 @@
 ---
 - hosts: dockerDolibarr
   gather_facts: "{{ gather_y_n | default(true) }}"
-  remote_user: "{{ remote_user | default('azureuser') }}"
+  remote_user: "{{ sudo_user | default('luiz') }}"
   become: true
   vars_files:
     - vars_files/dockerDolibarr.yml

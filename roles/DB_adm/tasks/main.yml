@@ -6,6 +6,8 @@
     login_host: "{{ item.host }}"
     name: "{{ item.dbname }}"
     state: present
+    login_unix_socket: "{{ item.socket | default('') }}"
+    config_file: "{{ item.config_file | default('') }}"
   loop: "{{ db_list }}"
   when: item.dbcreate and ( item.dbtype == "mysql" or item.dbtype == "mariadb" )
   register: mysql_databases_created 
@@ -18,11 +20,14 @@
     login_host: "{{ item.host }}"
     name: "{{ item.user }}"
     password: "{{ item.pass }}"
+    update_password: "{{ item.update_passwork | default('always') }}"
     host: "{{ item.allowed_host | default('%') }}"
     priv: "{{ item.perms }}"
     state: present
-    check_implicit_admin: true
-    append_privs: "{{ item.append_privs }}"
+    check_implicit_admin: "{{ item.check_implicit_admin | default(omit) }}"
+    append_privs: "{{ item.append_privs | default(omit) }}"
+    login_unix_socket: "{{ item.socket | default('') }}"
+    config_file: "{{ item.config_file | default('') }}"
   loop: "{{ db_list }}"
   when: item.dbcreate and mysql_databases_created is success
         and ( item.dbtype == "mysql" or item.dbtype == "mariadb" )
