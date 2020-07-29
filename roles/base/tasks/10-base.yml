@@ -1,10 +1,21 @@
 ---
-- name: Install dependency packages -----------------------
+- name: Install dependency packages (apt)------------------
   apt: 
     pkg: "{{ item.pkg }}" 
-    state: "present"
+    state: "{{ item.state | default('present') }}"
   loop: "{{ dep_pkg_list }}"
-  when: dep_pkg_list is defined and item.pkg is defined
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and dep_pkg_list is defined and item.pkg is defined
+  register: dep_pkg_installed
+  tags: install_dep_pkg
+
+- name: Install dependency packages (dnf)------------------
+  dnf: 
+    name: "{{ item.pkg }}" 
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ dep_pkg_list }}"
+  when: ansible_distribution is defined and ansible_distribution == "RedHat"
+        and dep_pkg_list is defined and item.pkg is defined
   register: dep_pkg_installed
   tags: install_dep_pkg
 

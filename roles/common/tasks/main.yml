@@ -5,10 +5,14 @@
 #  register: certbot_repo_added
 #  tags: update_repository
 #
-- name: Install remote python if not installed ------------
-  raw: "if [ ! -f {{ ansible_python['executable'] }} ] ; then apt install -y `basename {{ ansible_python['executable'] }}` ; fi "
-  when: ansible_python is defined 
-        and ansible_distribution == "Debian"
+- name: Install remote python if not installed (apt)-------
+  raw: "if [ ! -f /usr/bin/python3 ] ; then apt install -y python3 ; fi "
+  when: bootstrap_os is defined and bootstrap_os == "Debian"
+  tags: bootstrap_python
+
+- name: Install remote python if not installed (dnf)-------
+  raw: "if [ ! -f /usr/bin/python3 ] ; then dnf install -y python3 ; fi "
+  when: bootstrap_os is defined and (bootstrap_os == "CentOS" or bootstrap_os == "RedHat")
   tags: bootstrap_python
 
 - name: Install requisite packages to run apt_key ---------
@@ -16,8 +20,8 @@
     pkg: "{{ item }}"
     state: "present"
   loop: "{{ apt_key_req_packs }}"
-  when: apt_key_req_packs is defined and listAptRepos is defined 
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and apt_key_req_packs is defined and listAptRepos is defined 
   register: req_to_apt_key_installed
   tags: update_repository, apt_keys
 
@@ -26,9 +30,9 @@
     url: "{{ item.keyUrl }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: listAptRepos is defined and item.state is defined 
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and listAptRepos is defined and item.state is defined 
         and item.keyUrl is defined and req_to_apt_key_installed is success
-        and ansible_distribution == "Debian"
   register: apt_keys_done
   tags: update_repository, apt_keys
 
@@ -37,27 +41,48 @@
     repo: "{{ item.repoStr }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: listAptRepos is defined and item.state is defined and item.repoStr is defined
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and listAptRepos is defined and item.state is defined and item.repoStr is defined
   register: apt_repos_done
   tags: update_repository
+
+- name: dnf/yum database - add new repo -------------------
+  yum_repository:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    baseurl: "{{ item.baseurl | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ yum_repo_list }}"
+  when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
+        and yum_repo_list is defined and item.name is defined and item.description is defined
+  register: yum_repos_done
+  tags: update_repository, yum_repo
 
 - name: Update cache and upgrade (may take a time) --------
   apt: 
     update_cache: "yes"
     upgrade: "{{ update_cache_y_n | default(true) }}"
-  when: apt_repos_done is changed
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and apt_repos_done is changed
   register: updated_cache
   tags: update_repository
+
+- name: Update cache and upgrade (dnf) --------------------
+  dnf: 
+    update_cache: "yes"
+    #upgrade: "{{ update_cache_y_n | default(true) }}"
+  when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
+  #and yum_repos_done is changed
+  register: updated_cache
+  tags: update_repository, yum_repo
 
 # Some dependencies modules should be done early - eg. PIP before PIP module
 - name: Preliminary dependency install -- python-pip ------
   apt: 
     pkg: "python-pip"
     state: "present"
-  when: pip_install_list is defined and ansible_python_version is match("^2.*") 
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and pip_install_list is defined and ansible_python_version is match("^2.*") 
   register: pip_installed
   tags: bootstrap_python
 
@@ -65,8 +90,8 @@
   apt:
     pkg: "python3-pip"
     state: "present"
-  when: pip_install_list is defined and ansible_python_version is match("^3.*")
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and pip_install_list is defined and ansible_python_version is match("^3.*")
   register: pip3_installed
   tags: bootstrap_python
 
@@ -82,7 +107,7 @@
     pkg: "{{ item.pkg }}"
     state: "present"
   loop: "{{ base_dep_pkg_list }}"
-  when: base_dep_pkg_list is defined
-        and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and base_dep_pkg_list is defined
   register: base_dep_pkg_installed
   tags: install_base_pkg
