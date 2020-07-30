@@ -2,7 +2,7 @@
 - name: Ensure services are started and enabled -----------
   service: 
     name: "{{ item.srv }}" 
-    state: "{{ item.state | default('started') }}" 
+    state: "{{ item.srvstate | default('started') }}" 
     enabled: "{{ item.enabled | default(true) }}"
   loop: "{{ dep_pkg_list }}"
   when: dep_pkg_list is defined and item.srv is defined 
