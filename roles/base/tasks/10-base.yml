@@ -2,7 +2,7 @@
 - name: Install dependency packages (apt)------------------
   apt: 
     pkg: "{{ item.pkg }}" 
-    state: "{{ item.state | default('present') }}"
+    state: "{{ item.pkgstate | default('present') }}"
   loop: "{{ dep_pkg_list }}"
   when: ansible_distribution is defined and ansible_distribution == "Debian"
         and dep_pkg_list is defined and item.pkg is defined
@@ -12,7 +12,8 @@
 - name: Install dependency packages (dnf)------------------
   dnf: 
     name: "{{ item.pkg }}" 
-    state: "{{ item.state | default('present') }}"
+    state: "{{ item.pkgstate | default('present') }}"
+    skip_broken: "{{ item.skip_broken | default(omit) }}"
   loop: "{{ dep_pkg_list }}"
   when: ansible_distribution is defined and ansible_distribution == "RedHat"
         and dep_pkg_list is defined and item.pkg is defined
