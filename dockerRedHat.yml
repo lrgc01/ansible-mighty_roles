@@ -1,0 +1,9 @@
+---
+- hosts: redhat
+  gather_facts: "{{ gather_y_n | default(true) }}"
+  remote_user: "{{ remote_user | default('luiz') }}"
+  become: true
+  roles:
+    - common
+    - base
+    - Docker

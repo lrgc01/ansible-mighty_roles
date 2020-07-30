@@ -1,0 +1,18 @@
+---
+bootstrap_os: "RedHat"
+yum_repo_list: [
+   {
+      name: "docker-ce-stable",
+      description: "Docker CE stable - $basearch",
+      baseurl: "https://download.docker.com/linux/centos/7/$basearch/stable",
+      enabled: "yes",
+      gpgcakey: "https://download.docker.com/linux/centos/gpg",
+      gpgcheck: "yes",
+   },
+]
+
+dep_pkg_list: [
+   { pkg: "containerd.io" , },
+   { pkg: "docker-ce-cli", },
+   { pkg: "docker-ce-3:18.09.1-3.el7", srv : "docker" , srvstate : "started" , enabled : true, },
+]

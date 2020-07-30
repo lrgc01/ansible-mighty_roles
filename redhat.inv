@@ -1,0 +1,5 @@
+[redhat]
+redhat2
+
+[redhat:vars]
+ansible_python_interpreter="/usr/bin/env python3"
