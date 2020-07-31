@@ -10,10 +10,67 @@
   when: bootstrap_os is defined and bootstrap_os == "Debian"
   tags: bootstrap_python
 
-- name: Install remote python if not installed (dnf)-------
-  raw: "if [ ! -f /usr/bin/python3 ] ; then dnf install -y python3 ; fi "
+- name: Install remote python if not installed (yum)-------
+  raw: "if [ ! -f /usr/bin/python3 ] ; then yum install -y python3 ; fi "
   when: bootstrap_os is defined and (bootstrap_os == "CentOS" or bootstrap_os == "RedHat")
+        and ansible_python_interpreter is match(".*python3$") 
   tags: bootstrap_python
+
+- name: Install remote python if not installed (yum)-------
+  raw: "if [ ! -f /usr/bin/python2 ] ; then yum install -y python ; fi "
+  when: bootstrap_os is defined and (bootstrap_os == "CentOS" or bootstrap_os == "RedHat")
+        and ansible_python_interpreter is match(".*python2$") 
+  tags: bootstrap_python
+
+- name: Dependency install -- dnf on CentOS 7 -------------
+  raw: "if [ ! -f /usr/bin/dnf ] ; then yum install -y epel-release dnf ; fi "
+  when: bootstrap_os is defined and (bootstrap_os == "CentOS")
+        and ansible_python_interpreter is match(".*python3$") 
+  tags: bootstrap_python
+
+# Some dependencies modules should be done early - eg. PIP before PIP module
+- name: Install early python dependencies for Centos7 via pip
+  pip:
+    name: "dnf"
+  when: ansible_distribution is defined and ansible_distribution == "CentOS"
+        and pip_install_list is defined and ansible_python_version is match("^3.*")
+  tags: python_pip_modules
+
+- name: Dependency install -- python-pip (Debian/Ubuntu) --
+  apt: 
+    pkg: "python-pip"
+    state: "present"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and pip_install_list is defined and ansible_python_version is match("^2.*") 
+  register: pip_installed
+  tags: python_pip_modules
+
+- name: Dependency install -- python3-pip (Debian/Ubuntu) -
+  apt:
+    pkg: "python3-pip"
+    state: "present"
+  when: ansible_distribution is defined and ansible_distribution == "Debian"
+        and pip_install_list is defined and ansible_python_version is match("^3.*")
+  register: pip3_installed
+  tags: python_pip_modules
+
+- name: Dependency install -- python-pip (CentOS/RedHat) --
+  yum: 
+    pkg: "python-pip"
+    state: "present"
+  when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
+        and pip_install_list is defined and ansible_python_version is match("^2.*") 
+  register: pip_installed
+  tags: python_pip_modules
+
+- name: Dependency install -- python3-pip (CentOS/RedHat) -
+  dnf:
+    pkg: "python3-pip"
+    state: "present"
+  when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
+        and pip_install_list is defined and ansible_python_version is match("^3.*")
+  register: pip3_installed
+  tags: python_pip_modules
 
 - name: Install requisite packages to run apt_key ---------
   apt:
@@ -46,7 +103,7 @@
   register: apt_repos_done
   tags: update_repository
 
-- name: dnf/yum database - add new repo -------------------
+- name: yum database - add new repo -------------------
   yum_repository:
     name: "{{ item.name }}"
     description: "{{ item.description }}"
@@ -70,40 +127,30 @@
   register: updated_cache
   tags: update_repository
 
+- name: Update cache (yum) (may take a time) --------------
+  yum: 
+    update_cache: "yes"
+    #upgrade: "{{ update_cache_y_n | default(true) }}"
+  when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
+        and ansible_python_interpreter is match(".*python2$") 
+  register: updated_cache
+  tags: update_repository, yum_repo
+
 - name: Update cache (dnf) (may take a time) --------------
   dnf: 
     update_cache: "yes"
     #upgrade: "{{ update_cache_y_n | default(true) }}"
   when: ansible_distribution is defined and (ansible_distribution == "CentOS" or ansible_distribution == "RedHat")
-  #and yum_repos_done is changed
+        and ansible_python_interpreter is match(".*python3$") 
   register: updated_cache
   tags: update_repository, yum_repo
-
-# Some dependencies modules should be done early - eg. PIP before PIP module
-- name: Preliminary dependency install -- python-pip ------
-  apt: 
-    pkg: "python-pip"
-    state: "present"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
-        and pip_install_list is defined and ansible_python_version is match("^2.*") 
-  register: pip_installed
-  tags: bootstrap_python
-
-- name: Preliminary dependency install -- python3-pip -----
-  apt:
-    pkg: "python3-pip"
-    state: "present"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
-        and pip_install_list is defined and ansible_python_version is match("^3.*")
-  register: pip3_installed
-  tags: bootstrap_python
 
 - name: Install local python dependencies via pip ---------
   pip:
     name: "{{ item }}"
   loop: "{{ pip_install_list }}"
   when: pip_install_list is defined and (pip_installed is success or pip3_installed is success)
-  tags: bootstrap_python
+  tags: python_pip_modules
 
 - name: Install very basic packages to run ansible --------
   apt:

@@ -15,7 +15,8 @@
     state: "{{ item.pkgstate | default('present') }}"
     skip_broken: "{{ item.skip_broken | default(omit) }}"
   loop: "{{ dep_pkg_list }}"
-  when: ansible_distribution is defined and ansible_distribution == "RedHat"
+  when: ansible_distribution is defined 
+        and (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
         and dep_pkg_list is defined and item.pkg is defined
   register: dep_pkg_installed
   tags: install_dep_pkg

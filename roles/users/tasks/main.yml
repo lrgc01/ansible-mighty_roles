@@ -2,12 +2,16 @@
 - name: Create some general purpose users -----------------
   user:
     name: "{{ item.username }}"
-    comment: "{{ item.comment }}"
-    generate_ssh_key: "{{ item.sshkey }}"
-    groups: "{{ item.groups }}"
-    append: true
+    state: "{{ item.state | default(omit) }}"
+    remove: "{{ item.remove | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+    shell: "{{ item.shell | default(omit) }}"
+    generate_ssh_key: "{{ item.sshkey | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+    groups: "{{ item.groups | default(omit) }}"
+    append: "{{ item.append | default(true) }}"
   loop: "{{ users_list }}"
-  when: users_list[0]
+  when: users_list is defined
   register: users_created
   tags: base_users
 
@@ -17,7 +21,7 @@
     src: "~{{ item.username }}/.ssh/id_rsa"
     flat: true
   loop: "{{ users_list }}"
-  when: users_list[0] and item.sshkey
+  when: users_list is defined and item.sshkey is defined
   tags: base_users, auth_keys
 
 - name: Fill in authorized_keys to each user of a list ----
@@ -26,6 +30,6 @@
     state: present
     key: "{{ lookup('file', item.pub_key_file ) }}"
   loop: "{{ auth_keys_file_list }}"
-  when: auth_keys_file_list[0]
+  when: auth_keys_file_list is defined
   tags: base_users, auth_keys
 

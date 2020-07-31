@@ -1,5 +1,11 @@
 [redhat]
-redhat2
+centosv8-1
+
+[centosold]
+centosv7
 
 [redhat:vars]
+ansible_python_interpreter="/usr/bin/env python3"
+
+[centosold:vars]
 ansible_python_interpreter="/usr/bin/env python3"

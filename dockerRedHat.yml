@@ -1,9 +1,10 @@
 ---
-- hosts: redhat
+- hosts: centosold
   gather_facts: "{{ gather_y_n | default(true) }}"
-  remote_user: "{{ remote_user | default('luiz') }}"
+  remote_user: "{{ remote_sudo_user | default('luiz') }}"
   become: true
   roles:
     - common
     - base
-    - Docker
+    - users
+#    - Docker
