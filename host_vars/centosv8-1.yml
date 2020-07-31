@@ -1,0 +1,22 @@
+---
+bootstrap_os: "CentOS"
+yum_repo_list: [
+   {
+      name: "docker-ce-stable",
+      description: "Docker CE stable - $basearch",
+      baseurl: "https://download.docker.com/linux/centos/7/$basearch/stable",
+      enabled: "yes",
+      gpgcakey: "https://download.docker.com/linux/centos/gpg",
+      gpgcheck: "yes",
+   },
+]
+
+pip_install_list        : [ "docker" ,  "docker-compose", ]
+
+dep_pkg_list: [
+   { pkg: "containerd.io" , },
+   { pkg: "docker-ce-cli", },
+   { pkg: "docker-ce"    , srv : "docker" , srvstate : "started" , enabled : true, },
+   { pkg: "git" , },
+   { pkg: "make" , },
+]
