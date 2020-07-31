@@ -11,8 +11,12 @@ yum_repo_list: [
    },
 ]
 
+pip_install_list        : [ "docker" , "docker-compose", ]
+
 dep_pkg_list: [
    { pkg: "containerd.io" , },
-   { pkg: "docker-ce-cli", },
+   { pkg: "docker-ce-cli-1:18.09.1-3.el7", },
    { pkg: "docker-ce-3:18.09.1-3.el7", srv : "docker" , srvstate : "started" , enabled : true, },
+   { pkg: "git" , },
+   { pkg: "make" , },
 ]
