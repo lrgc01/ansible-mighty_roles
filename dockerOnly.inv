@@ -1,5 +1,5 @@
 [dockerOnly]
-oci-armubuntu1
+oci-ubuntu1
 
 [dockerOnly:vars]
 ansible_python_interpreter=/usr/bin/python3
