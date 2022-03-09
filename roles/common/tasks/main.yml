@@ -16,7 +16,7 @@
         and ansible_python_interpreter is match(".*python3$") 
   tags: bootstrap_python
 
-- name: Install remote python if not installed (yum)-------
+- name: Install remote python2 if not installed (yum)-------
   raw: "if [ ! -f /usr/bin/python2 ] ; then yum install -y python ; fi "
   when: bootstrap_os is defined and (bootstrap_os == "CentOS" or bootstrap_os == "RedHat")
         and ansible_python_interpreter is match(".*python2$") 
@@ -40,7 +40,8 @@
   apt: 
     pkg: "python-pip"
     state: "present"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and pip_install_list is defined and ansible_python_version is match("^2.*") 
   register: pip_installed
   tags: python_pip_modules
@@ -49,7 +50,8 @@
   apt:
     pkg: "python3-pip"
     state: "present"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and pip_install_list is defined and ansible_python_version is match("^3.*")
   register: pip3_installed
   tags: python_pip_modules
@@ -77,7 +79,8 @@
     pkg: "{{ item }}"
     state: "present"
   loop: "{{ apt_key_req_packs }}"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and apt_key_req_packs is defined and listAptRepos is defined 
   register: req_to_apt_key_installed
   tags: update_repository, apt_keys
@@ -87,7 +90,8 @@
     url: "{{ item.keyUrl }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and listAptRepos is defined and item.state is defined 
         and item.keyUrl is defined and req_to_apt_key_installed is success
   register: apt_keys_done
@@ -98,7 +102,8 @@
     repo: "{{ item.repoStr }}"
     state: "{{ item.state }}"
   loop: "{{ listAptRepos }}"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and listAptRepos is defined and item.state is defined and item.repoStr is defined
   register: apt_repos_done
   tags: update_repository
@@ -122,7 +127,8 @@
   apt: 
     update_cache: "yes"
     upgrade: "{{ update_cache_y_n | default(true) }}"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and apt_repos_done is changed
   register: updated_cache
   tags: update_repository
@@ -157,7 +163,8 @@
     pkg: "{{ item.pkg }}"
     state: "present"
   loop: "{{ base_dep_pkg_list }}"
-  when: ansible_distribution is defined and ansible_distribution == "Debian"
+  when: ansible_distribution is defined and ( ansible_distribution == "Debian"
+        or ansible_distribution == "Ubuntu" )
         and base_dep_pkg_list is defined
   register: base_dep_pkg_installed
   tags: install_base_pkg
