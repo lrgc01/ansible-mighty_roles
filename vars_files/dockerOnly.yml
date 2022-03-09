@@ -56,18 +56,18 @@ dep_pkg_list :
 ##
 ##*** Templates usually have many inline variables to substitute in their .j2 source files.
 #
-dir_file_tmpl_list  :
-        # Note: The DB host will be defined by IP in the start script inside container 
-   - { 
-        state      : "tmpl" , 
-        dir        : true ,
-        dest       : "/etc/docker" , 
-        srv        : "docker" ,
-        tmpl       : "daemon.json.j2" , 
-        name       : "daemon.json" , 
-        host       : "debian3" ,          # below here are the free form variables expected inside the .j2 template
-        port       : "5000" ,
-     }
+#dir_file_tmpl_list  :
+#        # Note: The DB host will be defined by IP in the start script inside container 
+#   - { 
+#        state      : "tmpl" , 
+#        dir        : true ,
+#        dest       : "/etc/docker" , 
+#        srv        : "docker" ,
+#        tmpl       : "daemon.json.j2" , 
+#        name       : "daemon.json" , 
+#        host       : "debian3" ,          # below here are the free form variables expected inside the .j2 template
+#        port       : "5000" ,
+#     }
 
 #--- End of base role block
 
@@ -98,7 +98,7 @@ dockerContainerList :
   - {
         enabled         : true ,
         name            : "ssh1" ,
-        image           : "lrgc01/ssh-stable_slim" ,
+        image           : "lrgc01/ssh-stable_slim:latest" ,
         pull            : true ,
         networks        : [ { name : "bridge" } ] ,
         published_ports : [ "0.0.0.0:22022:22", ] , 
