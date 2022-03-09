@@ -1,0 +1,197 @@
+---
+###########################################
+# 
+# Common role block
+#
+# Preliminary common configs
+#
+my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+listAptRepos : # It cames inside roles/Docker/defaults/main.yml 
+  - {
+       state   : "present" ,
+       keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
+       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       keyId   : "0EBFCD88" ,
+    }
+
+# Packages to install apt keys later
+# apt_key_req_packs : [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common' ]
+yum_req_packs : [ 'yum-utils', 'device-mapper-persistent-data', 'lvm2',]
+
+# Some very early pip python packs (It's inside roles/Docker/defaults/main.yml)
+pip_install_list        : [ "docker" ]
+
+#--- End of common role block
+
+###########################################
+#
+# Base role block variable definition
+#
+# General package and service hash list
+#
+# If a packet has a service associate it should be listed with srv, state and enabled.
+# enabled and state defaults to true and started respectively.
+dep_pkg_list :
+   - { pkg : "containerd.io"   }
+   - { pkg : "docker-ce-cli"   }
+   - { pkg : "docker-ce" ,  srv : "docker" , state : "started" , enabled : true }
+
+#
+### dir, file, template or link, depending on key values
+###
+### Will be used in template and file modules to create, delete and link.
+###
+### This dir_file_tmpl_list dict list var will be used in some different tasks, one of
+### each type: 
+#      - tmpl, dir, file link, file removal (absent) and copy (up/down).
+#       (each item of the list may be one of them)
+###    - state = "link" uses src and dest: ln -s src dest (force=yes => ln -s -f).
+###    - state = "tmpl" uses tmpl, name and dest: tmpl -> dest/name.
+###    - state = "absent" uses dest to remove the inode.
+###    - state = "upload"/"download" uses 'copy' Ansible module to upload/download a file
+### Note that the same list element may be used to create a directory if not existing.
+###    - When "dir" is true create a directory using dest.
+#
+### "srv" is used to restart the service, if applicable, after a template or file is changed.
+##
+##*** Templates usually have many inline variables to substitute in their .j2 source files.
+#
+#dir_file_tmpl_list  :
+#        # Note: The DB host will be defined by IP in the start script inside container 
+#   - { 
+#        state      : "tmpl" , 
+#        dir        : true ,
+#        dest       : "/etc/docker" , 
+#        srv        : "docker" ,
+#        tmpl       : "daemon.json.j2" , 
+#        name       : "daemon.json" , 
+#        host       : "debian3" ,          # below here are the free form variables expected inside the .j2 template
+#        port       : "5000" ,
+#     }
+
+#--- End of base role block
+
+
+###########################################
+#
+# Docker role block
+#
+#
+# List of containers to be created.
+# Except for 'name' and 'networks', all others may be omitted:
+#    networks (for now networks must be defined - or use 'bridge')
+#    links
+#    volumes
+#    volumes_from
+#    working_dir
+#    user
+#    published_ports
+#    state
+#    purge_networks (must use name=bridge when removing others)
+#    pull = check image to pull always the newer
+#
+# All plural variable names are LISTs, but 'networks'
+# must be a list of dict.
+# If omitted, 'image' will default to container's name.
+#
+#dockerContainerList :
+#  - {
+#        enabled         : true ,
+#        name            : "maven" ,
+#        image           : "debian3:5000/scratch_maven" ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "composer_maven:/opt/maven" , ] ,
+#        state           : "present" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "jenkins" ,
+#        image           : "debian3:5000/jenkins" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "composer_jenkins:/var/lib/jenkins" , "/home:/home", ] ,
+#        volumes_from    : [ "maven" ] ,
+#        working_dir     : "/var/lib/jenkins" ,
+#        user            : "jenkins" ,
+#        published_ports : [ "0.0.0.0:8080:8080" ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "python" ,
+#        image           : "debian3:5000/pytest_pyinstaller" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "/home:/home", ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "nodejs" ,
+#        image           : "debian3:5000/nodejs" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "/home:/home", ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        published_ports : [ "0.0.0.0:3030:3003" ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "nodejs2" ,
+#        image           : "debian3:5000/nodejs" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "/home:/home", ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        published_ports : [ "0.0.0.0:3300:3000" ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : false ,
+#        name            : "php" ,
+#        image           : "debian3:5000/php-stretch_slim" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "php_etc:/etc/php", "php_run:/run/php", "/var/www/html:/var/www/html" , ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        published_ports : [ "0.0.0.0:9000:9000", ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "php_composer" ,
+#        image           : "debian3:5000/dolibarr-stretch_slim" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "php_etc:/etc/php", "php2_run:/run/php", "/var/www/html:/var/www/html" , ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        published_ports : [ "0.0.0.0:9001:9000", "0.0.0.0:8000:8000", ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : true ,
+#        name            : "ruby" ,
+#        image           : "debian3:5000/ruby-stretch_slim" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "/home:/home", ] ,
+#        volumes_from    : [ "jenkins" ] ,
+#        published_ports : [ "0.0.0.0:4141:4100" ] , 
+#        state           : "started" ,
+#    }
+#  - {
+#        enabled         : false ,
+#        name            : "my_db_1" ,
+#        image           : "debian3:5000/mariadb-stretch_slim" ,
+#        pull            : true ,
+#        networks        : [ { name : "bridge" } ] ,
+#        volumes         : [ "mysql_data:/var/lib/mysql", "mysql_etc:/etc/mysql", ] ,
+#        published_ports : [ "0.0.0.0:3306:3306", ] , 
+#        state           : "started" ,
+#    }
+#
+#
+#
+#--- End of Docker role block
