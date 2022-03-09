@@ -47,7 +47,7 @@
   vars: 
     my_query: "[?enabled].networks"
     myHashNetList: "{{ dockerContainerList | json_query(my_query) | list | flatten | unique }}"
-  when: dockerContainerList is defined
+  when: dockerContainerList is defined and item.enabled
   register: docker_networks_created
   tags: docker, docker_networks
 
