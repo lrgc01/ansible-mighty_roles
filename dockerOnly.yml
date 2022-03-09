@@ -1,0 +1,11 @@
+---
+- hosts: dockerOnly
+  gather_facts: "{{ gather_y_n | default(true) }}"
+  remote_user: "{{ remote_user | default('ubuntu') }}"
+  become: true
+  vars_files:
+    - vars_files/dockerOnly.yml
+  roles:
+    - common
+    - base
+    - Docker
