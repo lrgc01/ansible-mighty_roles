@@ -6,11 +6,12 @@
 # Preliminary common configs
 #
 my_os : { Ubuntu : "ubuntu" , Debian : "debian" }
+my_arch : { aarch64 : "arm64" , x86_64 : "amd64" }
 listAptRepos : # It cames inside roles/Docker/defaults/main.yml 
   - {
        state   : "present" ,
        keyUrl  : "https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }}/gpg" ,
-       repoStr : "deb [arch=amd64] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
+       repoStr : "deb [arch={{ my_arch[ansible_facts['architecture']] }}] https://download.docker.com/linux/{{ my_os[ansible_facts['distribution']] }} {{ ansible_facts['distribution_release'] }} stable" ,
        keyId   : "0EBFCD88" ,
     }
 
@@ -98,7 +99,7 @@ dockerContainerList :
   - {
         enabled         : true ,
         name            : "ssh1" ,
-        image           : "lrgc01/ssh-stable_slim:latest" ,
+        image           : "lrgc01/ssh-stable_slim:{{ my_arch[ansible_facts['architecture']] }}" ,
         pull            : true ,
         networks        : [ { name : "bridge" } ] ,
         published_ports : [ "0.0.0.0:22022:22", ] , 
